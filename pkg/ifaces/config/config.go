@@ -28,6 +28,10 @@ type ConfigProvider interface {
 	// zh: 回傳 notifier 設定的配置列表。
 	GetNotifierConfigs() []configtypes.NotifierConfig
 
+	// GetCacheConfig returns the cache module configuration.
+	// zh: 回傳快取模組的組態設定。
+	GetCacheConfig() configtypes.CacheConfig
+
 	// Logger returns the configured logger instance.
 	// zh: 回傳已配置的 logger 實例。
 	Logger() logger.Logger

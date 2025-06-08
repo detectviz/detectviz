@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/detectviz/detectviz/internal/adapters/notifier"
+	notifieradapter "github.com/detectviz/detectviz/internal/adapters/notifier"
 	"github.com/detectviz/detectviz/pkg/configtypes"
 	"github.com/detectviz/detectviz/pkg/ifaces/logger"
 	notifieriface "github.com/detectviz/detectviz/pkg/ifaces/notifier"
@@ -36,12 +36,22 @@ func NewNotifierRegistry(cfgs []configtypes.NotifierConfig, log logger.Logger) [
 func buildNotifier(cfg configtypes.NotifierConfig, log logger.Logger) (notifieriface.Notifier, error) {
 	switch cfg.Type {
 	case "email":
-		return notifier.NewEmailNotifier(cfg.Name, cfg.Target, log), nil
+		return notifieradapter.NewEmailNotifier(cfg.Name, cfg.Target, log), nil
 	case "slack":
-		return notifier.NewSlackNotifier(cfg.Name, cfg.Target, log), nil
+		return notifieradapter.NewSlackNotifier(cfg.Name, cfg.Target, log), nil
 	case "webhook":
-		return notifier.NewWebhookNotifier(cfg.Name, log, http.DefaultClient), nil
+		return notifieradapter.NewWebhookNotifier(cfg.Name, log, http.DefaultClient), nil
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown notifier type: %s", cfg.Type))
 	}
+}
+
+// ProvideNotifier 根據設定與 logger 提供整合後的 Notifier 實例。
+// zh: 整合所有 notifier 為一個 Notifier，用於統一發送通知。
+func ProvideNotifier(cfgs []configtypes.NotifierConfig, log logger.Logger) notifieriface.Notifier {
+	list := NewNotifierRegistry(cfgs, log)
+	if len(list) == 0 {
+		return notifieradapter.NewNopNotifier()
+	}
+	return notifieradapter.NewMultiNotifier(list...)
 }

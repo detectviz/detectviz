@@ -1,16 +1,16 @@
 # Notifier Interface 設計說明
 
-本文件說明 `pkg/ifaces/notifier` 中的通知模組介面設計與使用方式，適用於告警、任務完成、錯誤推送等場景。
+> 本文件說明 `pkg/ifaces/notifier` 中的通知模組介面設計、使用情境與實作結構。Notifier 模組是 detectviz 的通用訊息推送介面，負責統一封裝告警與事件訊息，並透過 Email、Slack、Webhook 等方式傳遞至外部。
 
 ---
 
 ## 設計目標（Design Goals）
 
-- 抽象化通知機制，可對接多種傳送通道
-- 支援通知格式、封裝欄位、等級分類
-- 可於告警事件或排程任務中呼叫
-- 易於擴充：如 email, webhook, Slack, Line 等
-- 與 alert 與 eventbus 模組整合
+- 抽象化通知機制，支援多種傳送通道（如 email, webhook, slack）
+- 支援訊息格式、通知等級、推送目標等欄位封裝
+- 可由 alert 模組、scheduler 模組、eventbus 模組觸發使用
+- 易於擴充與動態註冊
+- 搭配 logger 記錄成功與錯誤資訊
 
 ---
 
@@ -22,65 +22,75 @@ type Notifier interface {
 }
 
 type Message struct {
-	Title   string
-	Content string
-	Level   string // info, warning, critical
-	Target  string // 接收對象或管道，例如 webhook URL、email address
-	Time    time.Time
+	Title   string            // 通知標題
+	Content string            // 通知內容
+	Level   string            // 分類：info / warning / critical
+	Target  string            // 接收對象，例如 webhook URL、email
+	Time    time.Time         // 發送時間
 }
 ```
 
 ---
 
-## 使用情境（Usage）
+## 使用情境（When and where it's used）
 
-適用於以下場景：
-
-- 告警觸發時發送通知（搭配 alert evaluator）
-- 任務完成後回報通知（如定時轉拋任務）
-- 系統異常通知管理員
-- 整合 eventbus 以即時推送事件
+- 告警觸發時由 AlertEvaluator 推送通知
+- 任務完成後由 Scheduler 發送執行結果
+- 系統異常時透過 EventBus 發送通知
+- 可於 plugin 中擴充事件通知行為
 
 ---
 
-## 實作位置（Implementations）
+## 實作位置與類型（Implementations）
 
-| 類型                | 路徑                                              | 描述                             |
-|---------------------|---------------------------------------------------|----------------------------------|
-| EmailNotifier        | `internal/adapters/notifier/email_adapter.go`     | 發送通知至指定 email 地址        |
-| SlackNotifier        | `internal/adapters/notifier/slack_adapter.go`     | 發送通知至 Slack 頻道            |
-| WebhookNotifier      | `internal/adapters/notifier/webhook_adapter.go`   | 發送 HTTP POST 至指定網址        |
-| MockNotifier         | `internal/adapters/notifier/mock_adapter.go`      | 測試用，記錄訊息不實際發送       |
+| 名稱             | 檔案路徑                                               | 描述                         |
+|------------------|--------------------------------------------------------|------------------------------|
+| EmailNotifier     | `internal/adapters/notifier/email_adapter.go`          | 寄送 email 通知               |
+| SlackNotifier     | `internal/adapters/notifier/slack_adapter.go`          | 發送 Slack 訊息               |
+| WebhookNotifier   | `internal/adapters/notifier/webhook_adapter.go`        | 送出 HTTP POST 通知          |
+| MockNotifier      | `internal/adapters/notifier/mock_adapter.go`           | 單元測試用，不實際發送        |
+| MultiNotifier     | `internal/adapters/notifier/multi.go`                  | 將一則訊息傳送給多個 Notifier |
+| NopNotifier       | `internal/adapters/notifier/nop.go`                    | 無動作通知器（開發或測試使用）|
+
+---
+
+## 設定與註冊方式（Configuration & Registration）
+
+- 設定來源：`pkg/configtypes/notifier_config.go`
+- 動態註冊位置：`internal/registry/notifier/registry.go`
+- 支援多個 notifier 並以 `[]configtypes.NotifierConfig` 批次註冊
+- 可注入 logger 與自定義 http client
 
 ---
 
 ## 測試結構（Testing Structure）
 
-| 測試檔案位置                                            | 測試目標                          |
-|---------------------------------------------------------|-----------------------------------|
-| `mock_adapter_test.go`                                  | 確認訊息格式與 interface 符合     |
-| `email_adapter_test.go`（未來）                         | 測試 email 發送邏輯與錯誤處理     |
-| `slack_adapter_test.go`（未來）                         | 驗證 Slack 通知格式與傳送行為    |
-| `webhook_adapter_test.go`（未來）                      | 測試 webhook 傳送與錯誤處理       |
+| 測試檔案位置                                         | 測試目標                        |
+|------------------------------------------------------|---------------------------------|
+| `mock_adapter_test.go`                               | 驗證介面契約與訊息結構          |
+| `email_adapter_test.go`（預定）                      | 測試 email 發送與錯誤處理       |
+| `slack_adapter_test.go`（預定）                      | 測試 Slack 訊息格式與傳遞邏輯   |
+| `webhook_adapter_test.go`（預定）                   | 測試 HTTP POST 傳送邏輯         |
+| `multi_test.go` / `nop_test.go`（補充中）            | 測試組合與靜態 fallback 行為    |
 
 ---
 
-## 擴充方式（Extension Tips）
+## 擴充方式（How to add a new Notifier）
 
-若要新增通知通道：
-
-1. 實作 `pkg/ifaces/notifier.Notifier` 介面
-2. 建立對應 adapter，例如 `internal/adapters/notifier/telegram_adapter.go`
-3. 補上錯誤處理與測試邏輯
-4. 加入註冊邏輯於 `internal/bootstrap/notifier_registry.go`，支援靜態註冊或從 `[]config.NotifierConfig` 動態載入
-5. 如需設定參數，擴充 `pkg/configtypes.NotifierConfig`
+1. 建立檔案於 `internal/adapters/notifier/{name}_adapter.go`
+2. 實作 `pkg/ifaces/notifier.Notifier` 介面
+3. 可搭配自定義 logger、HTTP client、retry 邏輯
+4. 補上單元測試：`{name}_adapter_test.go`
+5. 註冊至 `internal/registry/notifier/registry.go`
+6. 擴充 config 設定於 `pkg/configtypes/notifier_config.go`
 
 ---
 
-## 相關依賴模組
+## 相關依賴模組（Related Modules）
 
-- logger：用於記錄通知成功與錯誤訊息
-- alert / eventbus：可能的通知來源
-- config：設定每個通知通道的憑證與網址
+- `logger`：記錄通知發送與錯誤
+- `eventbus`：事件觸發來源
+- `alert` / `scheduler`：主要呼叫來源
+- `configtypes.NotifierConfig`：指定通道參數與開關
 
 ---

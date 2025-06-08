@@ -12,7 +12,7 @@
 | **整合測試** | 驗證多模組組合（註冊、依賴注入、流程運作） | `/internal/test/` | scheduler + notifier + logger 測通流程 |
 | **Fake 實作** | 提供固定邏輯模擬 interface，用於非驗證式測試 | `/internal/test/fakes/` 或 `/test/fakes/` | `fake_scheduler.go`、`fake_notifier.go` |
 | **Mock 實作** | 驗證呼叫方法/次數/參數是否正確 | `/internal/test/mocks/` 或 `/pkg/mocks/` | `mock_scheduler.go`（mockery 產出） |
-| **共用測試工具** | 建立可複用 logger、clock、context、資料構造等 | `/internal/test/testutil/` | `test_logger.go`、`fake_clock.go` |
+| **共用測試工具** | 建立可複用 logger、clock、context、資料構造等 | `/internal/test/testutil/` | `test_logger.go`、`assert_logger.go`、`fake_clock.go` |
 
 ### 統整建議
 
@@ -50,7 +50,9 @@ detectviz/
 │   │   ├── mocks/
 │   │   │   └── mock_scheduler.go
 │   │   ├── testutil/
-│   │   │   └── test_logger.go
+│   │   │   ├── test_logger.go
+│   │   │   ├── assert_logger.go
+│   │   │   └── fake_clock.go
 │   │   └── integration/
 │   │       └── alert_pipeline_test.go
 ├── pkg/
@@ -75,7 +77,8 @@ detectviz/
 
 - 用途：測試輔助函式與共用模組（logger、時間模擬、預設 context 等）。
 - 範例：
-  - `test_logger.go`：可重複使用的測試 logger，輸出收集後可斷言。
+  - `test_logger.go`：空實作 Logger，適用不需驗證 log 的測試場景。
+  - `assert_logger.go`：具 log 記錄功能，可斷言是否有記錄 log 與內容。
   - `fake_clock.go`：固定時間點模擬，便於測試時間觸發邏輯。
   - `test_context.go`：產生標準 context，內含 metadata 標記。
 

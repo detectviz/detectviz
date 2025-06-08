@@ -173,3 +173,31 @@ RegisterTaskHandler(handler TaskEventHandler)
 - 建議將每個事件類型放入獨立檔案管理，並在 `eventbus.go` 中用區塊分隔定義。
 
 ---
+
+## Logger 設定與測試輔助（Logger Injection and Testing）
+
+### plugin 測試建議
+
+為了讓事件處理器中的 log 行為可被測試與驗證，`EventDispatcher` 支援設定全域預設 logger。可用於單元測試中攔截 log 輸出。
+
+```go
+import testlogger "github.com/detectviz/detectviz/internal/test/testutil"
+import pluginlog "github.com/detectviz/detectviz/internal/registry/eventbus"
+
+log := testlogger.NewTestLogger()
+pluginlog.OverrideDefaultLogger(log)  // 在測試前先注入
+```
+
+事件處理器可在內部這樣取得 logger：
+
+```go
+log := pluginlog.GetDefaultLogger()
+log.Info("plugin triggered")
+```
+
+### 測試建議配套
+
+請使用內建 `TestLogger` 並驗證其 `Messages()` 方法是否包含預期內容，詳見：
+
+- `internal/test/testutil/test_logger.go`
+- `internal/test/plugins/eventbus/alertlog/alert_plugin_test.go`

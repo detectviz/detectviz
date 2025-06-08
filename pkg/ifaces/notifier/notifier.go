@@ -23,6 +23,10 @@ type Notifier interface {
 	Name() string
 
 	// Send delivers the message via this notifier channel.
-	// zh: 傳送訊息至此通道。
+	// zh: 傳送完整訊息結構至此通道，包含標籤與時間等欄位。
 	Send(ctx context.Context, msg Message) error
+
+	// Notify delivers a simple title-message pair.
+	// zh: 傳送簡易通知（標題與訊息），通常用於預設用途或簡化介面。
+	Notify(title, message string) error
 }

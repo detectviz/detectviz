@@ -42,3 +42,15 @@ func (n *SlackNotifier) Send(ctx context.Context, msg ifacenotifier.Message) err
 	// TODO: implement real Slack webhook logic
 	return nil
 }
+
+// Notify implements simplified notification with title and message.
+// zh: 使用簡易標題與訊息格式發送 Slack 通知。
+func (n *SlackNotifier) Notify(title, message string) error {
+	// TODO: 決定預設或從設定注入 Target
+	msg := ifacenotifier.Message{
+		Target:  "default-slack-channel",
+		Title:   title,
+		Content: message,
+	}
+	return n.Send(context.Background(), msg)
+}

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	adapters "github.com/detectviz/detectviz/internal/adapters/scheduler"
-	"github.com/detectviz/detectviz/internal/adapters/scheduler/testlogger"
+	"github.com/detectviz/detectviz/internal/test/testutil"
 	ifacescheduler "github.com/detectviz/detectviz/pkg/ifaces/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,6 +36,8 @@ func (m *mockJobWithRetry) Spec() string {
 	return m.spec
 }
 
+// TestWorkerPoolSchedulerIntegration 驗證 WorkerPoolScheduler 能夠依據排程與重試邏輯執行工作。
+// zh: 測試 worker pool 型排程器是否能正確執行失敗後可重試的任務。
 func TestWorkerPoolSchedulerIntegration(t *testing.T) {
 	ctx := context.Background()
 	job := &mockJobWithRetry{
@@ -44,7 +46,7 @@ func TestWorkerPoolSchedulerIntegration(t *testing.T) {
 		failUntil: 1,
 	}
 
-	log := testlogger.New()
+	log := testutil.NewTestLogger()
 	s := adapters.NewWorkerPoolScheduler(1, log)
 
 	var _ ifacescheduler.Scheduler = s // 型別符合驗證

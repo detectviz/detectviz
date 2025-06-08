@@ -42,3 +42,15 @@ func (n *EmailNotifier) Send(ctx context.Context, msg ifacenotifier.Message) err
 	// TODO: implement real email sending logic using SMTP or third-party API
 	return nil
 }
+
+// Notify implements the Notifier interface for simple notification.
+// zh: 將簡易 title/message 組裝為完整訊息後透過 Send 傳送。
+func (n *EmailNotifier) Notify(title, message string) error {
+	// TODO: 實際應從 config 或預設值決定 target
+	msg := ifacenotifier.Message{
+		Target:  "default@example.com",
+		Title:   title,
+		Content: message,
+	}
+	return n.Send(context.Background(), msg)
+}

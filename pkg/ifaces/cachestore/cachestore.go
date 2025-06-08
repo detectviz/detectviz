@@ -14,8 +14,9 @@ type CacheStore interface {
 	Set(key string, val string, ttlSeconds int) error
 
 	// Has returns true if the given key exists in cache.
-	// zh: 檢查 key 是否存在於快取中，非強一致性。
-	Has(key string) bool
+	// If an error occurs during the check, it returns false and the error.
+	// zh: 檢查 key 是否存在於快取中，非強一致性。若查詢錯誤則回傳 error。
+	Has(key string) (bool, error)
 
 	// Delete removes the value associated with the given key.
 	// zh: 從快取中移除指定的 key。

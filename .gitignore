@@ -25,5 +25,7 @@ go.work.sum
 # env file
 .env
 
-# macOS
+# custom
+.vscode
 .DS_Store
+todo.md

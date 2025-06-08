@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/detectviz/detectviz/internal/registry/notifier"
-	"github.com/detectviz/detectviz/internal/test/mock/logger"
+	"github.com/detectviz/detectviz/internal/test/testutil"
 	"github.com/detectviz/detectviz/pkg/configtypes"
 )
 
@@ -18,7 +18,7 @@ func TestNewNotifierRegistry(t *testing.T) {
 		{Name: "invalid", Type: "foo", Target: "xxx", Enable: true},                              // zh: 無效類型
 	}
 
-	log := logger.NewTestLogger()
+	log := testutil.NewTestLogger()
 	notifiers := notifier.NewNotifierRegistry(cfgs, log)
 
 	if len(notifiers) != 2 {

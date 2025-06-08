@@ -5,10 +5,11 @@ import "context"
 // AlertCondition represents the input to the evaluator, typically a rule or threshold.
 // zh: AlertCondition 表示要評估的告警條件，例如規則或閾值。
 type AlertCondition struct {
-	RuleID    string
-	Expr      string
-	Threshold float64
-	Labels    map[string]string
+	RuleID    string            // zh: 規則唯一識別碼
+	Expr      string            // zh: 查詢語句（如 PromQL 或 Flux）
+	Operator  string            // zh: 閾值比較運算子，例如 "ge"（大於等於）、"lt"（小於）
+	Threshold float64           // zh: 閾值，用於與查詢結果比對
+	Labels    map[string]string // zh: 查詢附加標籤，例如 host, job 等
 }
 
 // AlertResult represents the outcome of the evaluation.

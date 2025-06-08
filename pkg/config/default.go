@@ -16,6 +16,7 @@ import (
 type defaultProvider struct {
 	configMap       map[string]string
 	notifierConfigs []configtypes.NotifierConfig
+	cacheConfig     configtypes.CacheConfig // 快取模組的組態設定
 	log             logger.Logger
 	mu              sync.RWMutex
 }
@@ -29,6 +30,14 @@ func NewDefaultProvider() *defaultProvider {
 			{Name: "email", Type: "email", Target: "noreply@example.com", Enable: true},
 			{Name: "slack", Type: "slack", Target: "https://hooks.slack.com/services/xxx", Enable: true},
 			{Name: "webhook", Type: "webhook", Target: "https://example.com/webhook", Enable: false},
+		},
+		cacheConfig: configtypes.CacheConfig{
+			Backend: "memory",
+			Redis: configtypes.RedisConfig{
+				Address:  "localhost:6379",
+				Password: "",
+				DB:       0,
+			},
 		},
 		log: zap_adapter.NewZapLogger(zap.NewNop().Sugar()), // 預設使用 Zap Logger
 	}
@@ -76,6 +85,12 @@ func (p *defaultProvider) GetOrDefault(key, defaultVal string) string {
 // zh: 回傳 notifier 設定的配置列表。
 func (p *defaultProvider) GetNotifierConfigs() []configtypes.NotifierConfig {
 	return p.notifierConfigs
+}
+
+// GetCacheConfig returns the cache configuration.
+// zh: 回傳快取模組的組態設定。
+func (p *defaultProvider) GetCacheConfig() configtypes.CacheConfig {
+	return p.cacheConfig
 }
 
 // Reload is a placeholder for config reloading logic.

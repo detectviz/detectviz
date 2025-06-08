@@ -64,3 +64,15 @@ func (n *WebhookNotifier) Send(ctx context.Context, msg ifacenotifier.Message) e
 	n.logger.WithContext(ctx).Info("WebhookNotifier sent", "target", msg.Target, "status", resp.Status)
 	return nil
 }
+
+// Notify sends a simple title-message notification.
+// zh: 傳送簡易的標題與訊息格式至 webhook，將組成 JSON 輸出。
+func (n *WebhookNotifier) Notify(title, message string) error {
+	// TODO: 後續改為可設定或多通道支援
+	msg := ifacenotifier.Message{
+		Target:  "http://localhost:8080/webhook",
+		Title:   title,
+		Content: message,
+	}
+	return n.Send(context.Background(), msg)
+}

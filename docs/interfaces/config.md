@@ -1,38 +1,74 @@
-# ConfigProvider Interface 說明文件
+# ConfigProvider Interface 設計說明
 
-> 本文件為 Detectviz 專案中 `ConfigProvider` 介面的設計說明與使用情境整理。
+> 本文件為 Detectviz 專案中 `ConfigProvider` 介面的設計原則、使用情境與實作擴充方式整理，並統一與其他 interface 文件格式。
+
+---
 
 ## 介面用途（What it does）
 
-ConfigProvider 是 Detectviz 後端平台中統一存取設定值的標準介面。其設計目標為：
+`ConfigProvider` 是 Detectviz 平台中用於讀取設定值的統一抽象介面，其目標如下：
 
-- 解耦設定來源與業務邏輯
-- 避免使用全域變數與硬編碼
-- 提供 hot-reload 支援與擴充性（YAML, DB, 遠端等）
-- 易於 mock、測試與插件化
+- 解耦設定讀取來源與核心邏輯（YAML、ENV、Remote 等）
+- 避免硬編碼與全域變數污染
+- 支援 hot-reload（視實作而定）
+- 提供良好測試性（可注入 Mock 設定來源）
+- 支援擴充（如套用 Config Schema、版本控制）
+
+---
 
 ## 使用情境（When and where it's used）
 
-- 在 `internal/bootstrap/init.go` 中初始化並注入各模組
-- 各子模組透過 `Get`, `GetBool` 等方式查詢設定值
-- 支援後續單元測試與動態切換設定來源
+- 在 `internal/bootstrap/init.go` 中初始化後注入各核心模組
+- 子模組可透過 `Get`、`GetInt`、`GetBool` 取得配置參數
+- 搭配 logger、notifier、scheduler 等模組進行動態設定注入
+- 測試時可替換為 Fake 或 Map-based 實作
 
-## 方法說明（Methods）
+---
 
-- `Get(key string) string`：回傳指定 key 對應的字串設定值
-- `GetInt(key string) int`：回傳整數型別設定值
-- `GetBool(key string) bool`：回傳布林值設定值
-- `GetOrDefault(key, defaultVal string) string`：回傳 key 設定值，若無則回傳預設值
-- `Reload() error`：重新載入設定來源（若實作支援），可用於 hot-reload
+## 方法定義（Interface Methods）
 
-## 預期實作（Expected implementations）
+```go
+type ConfigProvider interface {
+    Get(key string) string
+    GetInt(key string) int
+    GetBool(key string) bool
+    GetOrDefault(key string, defaultVal string) string
+    Reload() error
+}
+```
 
-- `pkg/config/default.go`：預設記憶體實作，支援環境變數與 map
-- `internal/adapters/config/yaml.go`（可選擴充）：支援 YAML 檔案讀取
-- `internal/adapters/config/remote.go`（可選擴充）：支援 HTTP 或 config service
+- `Get`：傳回指定 key 的字串值，若不存在回空字串
+- `GetInt`：傳回整數值，無法解析時預設為 0
+- `GetBool`：傳回布林值，支援 "true"/"false" 字串轉換
+- `GetOrDefault`：若指定 key 無值，則傳回提供的 default 值
+- `Reload`：重新載入設定來源，若支援 hot-reload 機制
 
-## 關聯模組與擴充性（Related & extensibility）
+---
 
-- 可搭配 `watcher` 類型模組監控設定變更（future）
-- 可與遠端設定管理服務（如 Consul、etcd）整合
-- interface 抽象化允許單元測試時注入 mock 設定來源
+## 預期實作（Expected Implementations）
+
+| 類型     | 路徑位置                                   | 描述                            |
+|----------|--------------------------------------------|---------------------------------|
+| 預設     | `pkg/config/default.go`                    | 使用 map + ENV 實作設定讀取器   |
+| YAML     | `internal/adapters/config/yaml.go`         | 從指定 YAML 檔案讀取設定         |
+| Remote   | `internal/adapters/config/remote.go`       | 支援 HTTP / gRPC 動態設定服務   |
+| Nop/Fake | `internal/adapters/config/mock_adapter.go` | 提供測試用途的空實作或假資料     |
+
+---
+
+## 測試建議（Testing Strategy）
+
+- 可透過注入 `FakeConfigProvider` 模擬錯誤或邊界值
+- 建議單元測試涵蓋 `Reload` 行為與 fallback 邏輯
+- 結合整合測試驗證模組是否正確依據 config 行為切換
+
+---
+
+## 擴充與整合建議（Extensions & Integration）
+
+- 可整合 Config Schema，支援欄位驗證與版本轉換
+- 搭配熱更新模組（如 fsnotify）實現自動 reload
+- 與遠端設定中心（如 Consul、etcd、Spring Cloud Config）整合
+- 規劃支援 json-schema-version，可提升未來 JSON 設定相容性管理
+
+---
