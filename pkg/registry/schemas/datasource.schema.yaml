@@ -1,0 +1,16 @@
+apiVersion: core/v1
+kind: Datasource
+metadata:
+  name: string
+
+spec:
+  type: string
+  url: string
+  access: string
+  basicAuth: boolean
+  jsonData:
+    type: object
+    additionalProperties: true
+  secureJsonData:
+    type: object
+    additionalProperties: true

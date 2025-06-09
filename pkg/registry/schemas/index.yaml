@@ -1,0 +1,12 @@
+
+
+schemas:
+  - group: core
+    version: v1
+    kind: Host
+    file: host.schema.yaml
+
+  - group: core
+    version: v1
+    kind: Datasource
+    file: datasource.schema.yaml

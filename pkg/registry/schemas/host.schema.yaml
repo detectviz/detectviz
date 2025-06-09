@@ -1,0 +1,26 @@
+
+
+apiVersion: core/v1
+kind: Host
+metadata:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+
+spec:
+  type: object
+  required:
+    - ip
+    - hostname
+  properties:
+    ip:
+      type: string
+    hostname:
+      type: string
+    labels:
+      type: object
+      additionalProperties:
+        type: string

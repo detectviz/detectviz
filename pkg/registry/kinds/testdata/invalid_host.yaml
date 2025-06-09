@@ -1,0 +1,9 @@
+
+
+apiVersion: core/v1
+kind: Host
+
+spec:
+  ip: 1921681100
+  hostname: host-node01
+  labels: "not-a-map"
