@@ -10,12 +10,12 @@ import (
 // EngineAdapter wraps core.Engine to implement iface.ModuleEngine.
 // zh: EngineAdapter 包裝 core.Engine，使其實作 ModuleEngine 介面。
 type EngineAdapter struct {
-	engine *core.Engine
+	engine core.Engine
 }
 
 // NewEngineAdapter constructs a new EngineAdapter instance.
 // zh: 建立新的 EngineAdapter 實例。
-func NewEngineAdapter(e *core.Engine) *EngineAdapter {
+func NewEngineAdapter(e core.Engine) *EngineAdapter {
 	return &EngineAdapter{
 		engine: e,
 	}

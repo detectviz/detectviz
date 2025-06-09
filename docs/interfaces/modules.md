@@ -76,8 +76,8 @@ type ModuleRegistry interface {
 
 ```go
 type ModuleRunner interface {
-  StartAll(ctx context.Context) error
-  StopAll(ctx context.Context) error
+  Start(ctx context.Context) error
+  Stop(ctx context.Context) error
 }
 ```
 
@@ -112,7 +112,7 @@ listener := modules.NewListener(engine, registry, 5*time.Second)
 ctx := context.Background()
 
 listener.Start(ctx)
-if err := runner.StartAll(ctx); err != nil {
+if err := runner.Start(ctx); err != nil {
   log.Fatal(err)
 }
 ```

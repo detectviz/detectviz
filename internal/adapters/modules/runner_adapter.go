@@ -23,11 +23,11 @@ func NewRunnerAdapter(r *core.Runner) *RunnerAdapter {
 // StartAll starts all modules based on dependency order.
 // zh: 依據依賴關係啟動所有模組。
 func (a *RunnerAdapter) StartAll(ctx context.Context) error {
-	return a.runner.StartAll(ctx)
+	return a.runner.Start(ctx)
 }
 
 // StopAll stops all modules in reverse order.
 // zh: 依照啟動順序反向關閉所有模組。
 func (a *RunnerAdapter) StopAll(ctx context.Context) error {
-	return a.runner.StopAll(ctx)
+	return a.runner.Stop(ctx)
 }

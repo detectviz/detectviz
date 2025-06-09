@@ -15,7 +15,7 @@ type HealthCheckable interface {
 // Listener monitors the health of modules and triggers shutdown if needed.
 // zh: Listener 監控所有模組健康狀態，必要時觸發全域停機。
 type Listener struct {
-	engine   *Engine
+	engine   Engine
 	registry *Registry
 	interval time.Duration
 	cancel   context.CancelFunc
@@ -23,7 +23,7 @@ type Listener struct {
 
 // NewListener creates a new health monitoring listener.
 // zh: 建立健康狀態監控器。
-func NewListener(engine *Engine, registry *Registry, interval time.Duration) *Listener {
+func NewListener(engine Engine, registry *Registry, interval time.Duration) *Listener {
 	return &Listener{
 		engine:   engine,
 		registry: registry,
