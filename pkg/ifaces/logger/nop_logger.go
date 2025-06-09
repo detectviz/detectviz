@@ -10,18 +10,6 @@ type NopLogger struct{}
 // zh: Debug 級別，不輸出內容。
 func (NopLogger) Debug(msg string, args ...any) {}
 
-// Infof does nothing.
-// zh: Info 級別，不輸出內容。
-func (NopLogger) Infof(format string, args ...any) {}
-
-// Warnf does nothing.
-// zh: Warn 級別，不輸出內容。
-func (NopLogger) Warnf(format string, args ...any) {}
-
-// Errorf does nothing.
-// zh: Error 級別，不輸出內容。
-func (NopLogger) Errorf(format string, args ...any) {}
-
 // Sync does nothing and returns nil.
 // zh: 不需 flush，直接回傳 nil。
 func (NopLogger) Sync() error { return nil }
