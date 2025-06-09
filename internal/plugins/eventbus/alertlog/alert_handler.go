@@ -28,9 +28,3 @@ func (h *AlertPluginHandler) HandleAlertTriggered(ctx context.Context, e event.A
 	}).Info("[ALERT] triggered")
 	return nil
 }
-
-// Register this plugin handler during package initialization.
-// zh: 套件初始化時將此 plugin handler 註冊至事件總線。
-func init() {
-	eventbus.RegisterAlertHandler(&AlertPluginHandler{})
-}
