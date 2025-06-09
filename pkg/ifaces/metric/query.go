@@ -7,5 +7,5 @@ import "context"
 type MetricQueryAdapter interface {
 	// Query executes a query expression with optional label filters and returns a numeric result.
 	// zh: 執行查詢語句並搭配可選的標籤篩選，回傳單一數值結果。
-	QueryValue(ctx context.Context, expr string, labels map[string]string) (float64, error)
+	Query(ctx context.Context, expr string, labels map[string]string) (float64, error)
 }
