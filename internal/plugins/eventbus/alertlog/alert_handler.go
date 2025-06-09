@@ -3,7 +3,6 @@ package alertlog
 import (
 	"context"
 
-	"github.com/detectviz/detectviz/internal/adapters/eventbus"
 	"github.com/detectviz/detectviz/pkg/ifaces/event"
 	"github.com/detectviz/detectviz/pkg/ifaces/logger"
 )
