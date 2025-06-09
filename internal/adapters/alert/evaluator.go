@@ -32,7 +32,7 @@ func (e *DefaultAlertEvaluator) Evaluate(ctx context.Context, cond alert.AlertCo
 	e.Log.Debug("evaluating alert condition", "expr", cond.Expr, "threshold", cond.Threshold)
 
 	// 查詢指標資料
-	value, err := e.Query.QueryValue(ctx, cond.Expr, cond.Labels)
+	value, err := e.Query.Query(ctx, cond.Expr, cond.Labels)
 	if err != nil {
 		e.Log.Error("query failed", "error", err)
 		return alert.AlertResult{
