@@ -1,16 +1,16 @@
-package redis_test
+package redisadapter_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/detectviz/detectviz/internal/adapters/cachestore/redis"
+	redisadapter "github.com/detectviz/detectviz/internal/adapters/cachestore/redis"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
 
-func newTestClient() *redis.RedisCacheStore {
-	client := redis.NewRedisCacheStore(redisclient())
+func newTestClient() *redisadapter.RedisCacheStore {
+	client := redisadapter.NewRedisCacheStore(redisclient())
 	_ = client.Delete("test:key1")
 	_ = client.Delete("test:key2")
 	_ = client.Delete("test:temp")

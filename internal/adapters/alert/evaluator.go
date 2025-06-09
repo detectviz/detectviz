@@ -1,5 +1,5 @@
 // Package alert 提供 AlertEvaluator 的預設實作，用於根據規則比對指標狀態。
-package alert
+package alertadapter
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/detectviz/detectviz/pkg/ifaces/alert"
 	"github.com/detectviz/detectviz/pkg/ifaces/logger"
-	"github.com/detectviz/detectviz/pkg/ifaces/metric"
+	metric "github.com/detectviz/detectviz/pkg/ifaces/metrics"
 )
 
 // DefaultAlertEvaluator 是 alert.AlertEvaluator 的預設實作。

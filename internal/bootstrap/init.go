@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"github.com/detectviz/detectviz/internal/adapters/alert/flux"
-	"github.com/detectviz/detectviz/internal/adapters/alert/prom"
+	fluxadapter "github.com/detectviz/detectviz/internal/adapters/alert/flux"
+	promadapter "github.com/detectviz/detectviz/internal/adapters/alert/prom"
 	"github.com/detectviz/detectviz/internal/alert"
 	"github.com/detectviz/detectviz/internal/registry"
 
@@ -13,29 +13,44 @@ import (
 )
 
 var (
-	Config              ifconfig.ConfigProvider
+	Config ifconfig.ConfigProvider
+	// Registry is the global runtime component registry.
+	// zh: Registry 為平台執行期模組註冊中心。
 	Registry            *registry.RegistryContainer
 	AlertEvaluatorStore *alertregistry.AlertEvaluatorRegistry
 )
 
-// Init 系統初始化邏輯
+// Init initializes the entire system.
 // zh: 執行整體系統初始化，包含設定載入與核心元件註冊。
 func Init() {
-	// zh: 載入預設設定提供者（含 logger, notifier config 等）
+	initConfig()
+	initRegistry()
+	initAlertEvaluators()
+	initAlertModule()
+}
+
+// initConfig loads the default config provider.
+// zh: 載入預設設定提供者。
+func initConfig() {
 	Config = config.NewDefaultProvider()
+}
 
-	// zh: 註冊所有平台元件（notifier、scheduler、cachestore 等）
+// initRegistry sets up the runtime registry.
+// zh: 註冊所有平台元件（如 notifier、scheduler 等）。
+func initRegistry() {
 	Registry = registry.NewRegistry(Config, "cron", Config.Logger())
+}
 
-	// zh: 建立 AlertEvaluator 註冊中心（含 prometheus, flux）
+// initAlertEvaluators registers alert evaluators (prometheus, flux).
+// zh: 註冊預設告警評估器。
+func initAlertEvaluators() {
 	AlertEvaluatorStore = alertregistry.NewDefaultAlertEvaluatorRegistry(Config.Logger())
+	AlertEvaluatorStore.Register("prometheus", promadapter.NewEvaluator(Config.Logger()))
+	AlertEvaluatorStore.Register("flux", fluxadapter.NewEvaluator(Config.Logger()))
+}
 
-	// zh: 註冊預設 prometheus 告警評估器至註冊中心
-	AlertEvaluatorStore.Register("prometheus", prom.NewEvaluator(Config.Logger()))
-
-	// zh: 註冊 flux 告警評估器至註冊中心
-	AlertEvaluatorStore.Register("flux", flux.NewEvaluator(Config.Logger()))
-
-	// zh: 將設定注入給 alert 模組（含 evaluator、告警處理器）
+// initAlertModule injects config into the alert module.
+// zh: 將設定注入 alert 模組。
+func initAlertModule() {
 	alert.Init(Config)
 }

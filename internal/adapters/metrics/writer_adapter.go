@@ -1,9 +1,8 @@
-package metrics
+package metricsadapter
 
 import (
 	"context"
 	"errors"
-	//"github.com/detectviz/detectviz/pkg/ifaces/metric"
 )
 
 // InfluxMetricWriter implements MetricWriter for sending metrics to InfluxDB.

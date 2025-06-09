@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/detectviz/detectviz/internal/adapters/eventbus"
+	eventbusadapter "github.com/detectviz/detectviz/internal/adapters/eventbus"
 	cachestoreregistry "github.com/detectviz/detectviz/internal/registry/cachestore"
 	notifierregistry "github.com/detectviz/detectviz/internal/registry/notifier"
 	scheduleregistry "github.com/detectviz/detectviz/internal/registry/scheduler"
@@ -36,7 +36,7 @@ func NewRegistry(cfg ifconfig.ConfigProvider, schedulerProvider string, log logg
 // NewInMemoryEventDispatcher 建立新的事件總線 Dispatcher（使用記憶體）
 // zh: 建立並整合內建與 plugin 註冊的所有事件處理器。
 func NewInMemoryEventDispatcher() eventbusiface.EventDispatcher {
-	dispatcher := eventbus.NewInMemoryDispatcher()
+	dispatcher := eventbusadapter.NewInMemoryDispatcher()
 	registerAllHandlers(dispatcher)
 	return dispatcher
 }
@@ -53,16 +53,16 @@ func NewKafkaEventDispatcher() eventbusiface.EventDispatcher {
 // registerAllHandlers 將所有 plugin handler 註冊到指定 Dispatcher
 // zh: 將 Alert、Host、Metric、Task 等處理器註冊至事件總線。
 func registerAllHandlers(d eventbusiface.EventDispatcher) {
-	for _, h := range eventbus.LoadPluginAlertHandlers() {
+	for _, h := range eventbusadapter.LoadPluginAlertHandlers() {
 		d.RegisterAlertHandler(h)
 	}
-	for _, h := range eventbus.LoadPluginHostHandlers() {
+	for _, h := range eventbusadapter.LoadPluginHostHandlers() {
 		d.RegisterHostHandler(h)
 	}
-	for _, h := range eventbus.LoadPluginMetricHandlers() {
+	for _, h := range eventbusadapter.LoadPluginMetricHandlers() {
 		d.RegisterMetricHandler(h)
 	}
-	for _, h := range eventbus.LoadPluginTaskHandlers() {
+	for _, h := range eventbusadapter.LoadPluginTaskHandlers() {
 		d.RegisterTaskHandler(h)
 	}
 }

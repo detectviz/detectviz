@@ -1,5 +1,5 @@
 // Package flux 提供基於 Flux 查詢語言的 AlertEvaluator 實作。
-package flux
+package fluxadapter
 
 import (
 	"context"

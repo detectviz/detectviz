@@ -1,6 +1,4 @@
-package metrics
-
-//import "github.com/detectviz/detectviz/pkg/ifaces/metric"
+package metricsadapter
 
 // NoopTransformer implements MetricTransformer without any modification.
 // zh: NoopTransformer 是不進行任何轉換的預設實作。

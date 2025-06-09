@@ -1,11 +1,11 @@
-package scheduler_test
+package scheduleradapter_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	adapters "github.com/detectviz/detectviz/internal/adapters/scheduler"
+	scheduleradapter "github.com/detectviz/detectviz/internal/adapters/scheduler"
 	"github.com/detectviz/detectviz/internal/test/testutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +38,7 @@ func TestCronScheduler_Run(t *testing.T) {
 	job := &mockJob{name: "cron-job", spec: "@every 2s"}
 
 	logger := testutil.NewTestLogger()
-	sched := adapters.NewCronScheduler(logger)
+	sched := scheduleradapter.NewCronScheduler(logger)
 	sched.Register(job)
 
 	err := sched.Start(ctx)

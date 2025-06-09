@@ -93,10 +93,21 @@ func (p *defaultProvider) GetCacheConfig() configtypes.CacheConfig {
 	return p.cacheConfig
 }
 
-// Reload is a placeholder for config reloading logic.
-// zh: 預留重新載入設定檔功能，目前尚未實作。
+// Reload is a no-op for defaultProvider.
+// This method is a placeholder for config reload logic, and always returns nil.
+// If reload is not supported, returns nil. (See interface documentation.)
+// zh: 預留重新載入設定檔功能，目前尚未實作。若不支援，則回傳 nil。
 func (p *defaultProvider) Reload() error {
 	return nil
+}
+
+// Set assigns a key-value pair to the configMap.
+// WARNING: This method is intended for testing purposes only. Do NOT use in production code!
+// zh: 寫入設定鍵值對。⚠ 僅供測試用途，請勿於正式執行路徑中使用。
+func (p *defaultProvider) Set(key, val string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.configMap[key] = val
 }
 
 // Logger returns the configured logger instance.

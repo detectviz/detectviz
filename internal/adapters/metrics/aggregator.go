@@ -1,10 +1,9 @@
-package metrics
+package metricsadapter
 
 import (
 	"errors"
 
-	"github.com/detectviz/detectviz/pkg/ifaces/metric"
-	//"github.com/detectviz/detectviz/pkg/ifaces/metric"
+	metric "github.com/detectviz/detectviz/pkg/ifaces/metrics"
 )
 
 // AggregationType defines the available aggregation methods.

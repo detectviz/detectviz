@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/detectviz/detectviz/internal/adapters/logger"
+	loggeradapter "github.com/detectviz/detectviz/internal/adapters/logger"
 	ifacelogger "github.com/detectviz/detectviz/pkg/ifaces/logger"
 	"go.uber.org/zap"
 )
@@ -12,5 +12,5 @@ func ProvideLogger() ifacelogger.Logger {
 	// Use Zap logger by default.
 	// zh: 預設使用 Zap logger，實作於 internal/adapters/logger/zap_adapter.go。
 	zapLogger, _ := zap.NewDevelopment()
-	return logger.NewZapLogger(zapLogger.Sugar())
+	return loggeradapter.NewZapLogger(zapLogger.Sugar())
 }

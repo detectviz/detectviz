@@ -1,14 +1,14 @@
-package memory_test
+package memoryadapter_test
 
 import (
 	"testing"
 
-	"github.com/detectviz/detectviz/internal/adapters/cachestore/memory"
+	memoryadapter "github.com/detectviz/detectviz/internal/adapters/cachestore/memory"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMemoryCacheStore_BasicOperations(t *testing.T) {
-	store := memory.NewMemoryCacheStore()
+	store := memoryadapter.NewMemoryCacheStore()
 
 	err := store.Set("foo", "123", 0)
 	assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestMemoryCacheStore_BasicOperations(t *testing.T) {
 }
 
 func TestMemoryCacheStore_Keys(t *testing.T) {
-	store := memory.NewMemoryCacheStore()
+	store := memoryadapter.NewMemoryCacheStore()
 
 	err := store.Set("user:1", "A", 0)
 	assert.NoError(t, err)

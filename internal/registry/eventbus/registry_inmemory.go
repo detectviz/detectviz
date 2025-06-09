@@ -1,7 +1,7 @@
 package eventbus
 
 import (
-	"github.com/detectviz/detectviz/internal/adapters/eventbus"
+	eventbusadapter "github.com/detectviz/detectviz/internal/adapters/eventbus"
 	eventbusiface "github.com/detectviz/detectviz/pkg/ifaces/eventbus"
 )
 
@@ -12,18 +12,18 @@ func (p *inMemoryProvider) Name() string {
 }
 
 func (p *inMemoryProvider) Build() eventbusiface.EventDispatcher {
-	dispatcher := eventbus.NewInMemoryDispatcher()
+	dispatcher := eventbusadapter.NewInMemoryDispatcher()
 
-	for _, h := range eventbus.LoadPluginAlertHandlers() {
+	for _, h := range eventbusadapter.LoadPluginAlertHandlers() {
 		dispatcher.RegisterAlertHandler(h)
 	}
-	for _, h := range eventbus.LoadPluginHostHandlers() {
+	for _, h := range eventbusadapter.LoadPluginHostHandlers() {
 		dispatcher.RegisterHostHandler(h)
 	}
-	for _, h := range eventbus.LoadPluginMetricHandlers() {
+	for _, h := range eventbusadapter.LoadPluginMetricHandlers() {
 		dispatcher.RegisterMetricHandler(h)
 	}
-	for _, h := range eventbus.LoadPluginTaskHandlers() {
+	for _, h := range eventbusadapter.LoadPluginTaskHandlers() {
 		dispatcher.RegisterTaskHandler(h)
 	}
 

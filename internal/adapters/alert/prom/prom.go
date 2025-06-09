@@ -1,5 +1,5 @@
 // Package prom 提供基於 Prometheus 查詢語言的 AlertEvaluator 實作。
-package prom
+package promadapter
 
 import (
 	"context"

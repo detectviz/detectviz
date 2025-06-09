@@ -1,8 +1,8 @@
 package cachestore
 
 import (
-	"github.com/detectviz/detectviz/internal/adapters/cachestore/memory"
-	"github.com/detectviz/detectviz/internal/adapters/cachestore/redis"
+	memoryadapter "github.com/detectviz/detectviz/internal/adapters/cachestore/memory"
+	redisadapter "github.com/detectviz/detectviz/internal/adapters/cachestore/redis"
 	"github.com/detectviz/detectviz/pkg/configtypes"
 	cachestoreiface "github.com/detectviz/detectviz/pkg/ifaces/cachestore"
 	goredis "github.com/redis/go-redis/v9"
@@ -17,8 +17,8 @@ func RegisterCacheStore(cfg configtypes.CacheConfig) cachestoreiface.CacheStore 
 			Password: cfg.Redis.Password,
 			DB:       cfg.Redis.DB,
 		})
-		return redis.NewRedisCacheStore(client)
+		return redisadapter.NewRedisCacheStore(client)
 	}
 
-	return memory.NewMemoryCacheStore()
+	return memoryadapter.NewMemoryCacheStore()
 }

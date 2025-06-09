@@ -1,11 +1,11 @@
-package metrics
+package metricsadapter
 
 import (
 	"context"
 	"errors"
 	"time"
 
-	"github.com/detectviz/detectviz/pkg/ifaces/metric"
+	metric "github.com/detectviz/detectviz/pkg/ifaces/metrics"
 )
 
 // MockSeriesReader implements MetricSeriesReader with dummy time series data.

@@ -1,11 +1,11 @@
-package scheduler_test
+package scheduleradapter_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	adapters "github.com/detectviz/detectviz/internal/adapters/scheduler"
+	scheduleradapter "github.com/detectviz/detectviz/internal/adapters/scheduler"
 	"github.com/detectviz/detectviz/internal/test/testutil"
 	ifacescheduler "github.com/detectviz/detectviz/pkg/ifaces/scheduler"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func TestWorkerPoolSchedulerIntegration(t *testing.T) {
 	}
 
 	log := testutil.NewTestLogger()
-	s := adapters.NewWorkerPoolScheduler(1, log)
+	s := scheduleradapter.NewWorkerPoolScheduler(1, log)
 
 	var _ ifacescheduler.Scheduler = s // 型別符合驗證
 

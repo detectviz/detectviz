@@ -102,6 +102,22 @@ Detectviz 採用清楚且語意一致的命名規則來區分 interface（抽象
 - 跨模組共享的實作命名應避免功能模糊，例如避免使用 `DefaultImpl`
 - 對應文檔請一併維護於 `/docs/interfaces/` 中
 
+### Package 命名慣例補充
+
+- 為避免與 `pkg/ifaces/metric` 等核心介面衝突，建議 adapter 的實作包使用 `package xxxadapter` 命名，例如 `metricsadapter`, `loggeradapter`
+- 這有助於區分：
+  - 核心抽象層（如 `metric.Writer`、`logger.Logger`）
+  - 對應的實作包（如 `internal/adapters/metrics`）
+- 匯入時可維持一致，例如：
+
+```go
+import metricsadapter "detectviz/internal/adapters/metrics"
+```
+
+- 適用情境：
+  - 該模組有清楚對應 interface（如 `pkg/ifaces/metric.Writer`）
+  - 有多種實作可能（如 `InfluxWriter`, `PrometheusWriter`）
+
 ---
 
 ## 靜態分析與 Lint 工具

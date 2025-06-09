@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/detectviz/detectviz/internal/adapters/alert/flux"
-	"github.com/detectviz/detectviz/internal/adapters/alert/prom"
+	fluxadapter "github.com/detectviz/detectviz/internal/adapters/alert/flux"
+	promadapter "github.com/detectviz/detectviz/internal/adapters/alert/prom"
 	"github.com/detectviz/detectviz/pkg/ifaces/alert"
 	"github.com/detectviz/detectviz/pkg/ifaces/logger"
 )
@@ -31,8 +31,8 @@ func NewAlertEvaluatorRegistryWithLogger(log logger.Logger) *AlertEvaluatorRegis
 // zh: 注入 PromEvaluator 與 FluxEvaluator 供預設使用。
 func NewDefaultAlertEvaluatorRegistry(log logger.Logger) *AlertEvaluatorRegistry {
 	r := NewAlertEvaluatorRegistryWithLogger(log)
-	r.Register("prometheus", prom.NewEvaluator(log))
-	r.Register("flux", flux.NewEvaluator(log))
+	r.Register("prometheus", promadapter.NewEvaluator(log))
+	r.Register("flux", fluxadapter.NewEvaluator(log))
 	return r
 }
 

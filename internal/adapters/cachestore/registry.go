@@ -1,12 +1,12 @@
-package cachestore
+package cachestoreadapter
 
 import (
 	"errors"
 	"fmt"
 	"sort"
 
-	"github.com/detectviz/detectviz/internal/adapters/cachestore/memory"
-	"github.com/detectviz/detectviz/internal/adapters/cachestore/redis"
+	memoryadapter "github.com/detectviz/detectviz/internal/adapters/cachestore/memory"
+	redisadapter "github.com/detectviz/detectviz/internal/adapters/cachestore/redis"
 	"github.com/detectviz/detectviz/pkg/ifaces/cachestore"
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -21,7 +21,7 @@ var ErrUnknownBackend = errors.New("unknown cache backend")
 
 var registry = map[string]func() cachestore.CacheStore{
 	"memory": func() cachestore.CacheStore {
-		return memory.NewMemoryCacheStore()
+		return memoryadapter.NewMemoryCacheStore()
 	},
 }
 
@@ -51,9 +51,9 @@ func GetDefault() cachestore.CacheStore {
 // zh: 註冊並建立 Redis 快取實作，用於注入 redis client。
 func WithRedisClient(client *goredis.Client) cachestore.CacheStore {
 	Register("redis", func() cachestore.CacheStore {
-		return redis.NewRedisCacheStore(client)
+		return redisadapter.NewRedisCacheStore(client)
 	})
-	return redis.NewRedisCacheStore(client)
+	return redisadapter.NewRedisCacheStore(client)
 }
 
 // List returns the names of all registered cache backends.

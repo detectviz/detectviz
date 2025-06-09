@@ -3,7 +3,7 @@ package eventbus
 import (
 	"fmt"
 
-	"github.com/detectviz/detectviz/internal/adapters/eventbus"
+	eventbusadapter "github.com/detectviz/detectviz/internal/adapters/eventbus"
 	"github.com/detectviz/detectviz/pkg/ifaces/event"
 	eventbusiface "github.com/detectviz/detectviz/pkg/ifaces/eventbus"
 )
@@ -20,7 +20,7 @@ type DispatcherOptions struct {
 // NewInMemoryEventDispatcherWithOptions constructs an in-memory dispatcher with injected handlers.
 // zh: 根據傳入的 DispatcherOptions 建立記憶體型事件分派器。
 func NewInMemoryEventDispatcherWithOptions(opt DispatcherOptions) eventbusiface.EventDispatcher {
-	dispatcher := eventbus.NewInMemoryDispatcher()
+	dispatcher := eventbusadapter.NewInMemoryDispatcher()
 
 	for _, h := range opt.AlertHandlers {
 		dispatcher.RegisterAlertHandler(h)

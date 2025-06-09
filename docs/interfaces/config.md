@@ -33,6 +33,9 @@ type ConfigProvider interface {
     GetInt(key string) int
     GetBool(key string) bool
     GetOrDefault(key string, defaultVal string) string
+    GetCacheConfig() configtypes.CacheConfig
+    GetNotifierConfigs() []configtypes.NotifierConfig
+    Logger() logger.Logger
     Reload() error
 }
 ```
@@ -41,7 +44,10 @@ type ConfigProvider interface {
 - `GetInt`：傳回整數值，無法解析時預設為 0
 - `GetBool`：傳回布林值，支援 "true"/"false" 字串轉換
 - `GetOrDefault`：若指定 key 無值，則傳回提供的 default 值
-- `Reload`：重新載入設定來源，若支援 hot-reload 機制
+- `GetCacheConfig`：回傳快取模組所需的結構設定
+- `GetNotifierConfigs`：回傳通知通道模組的設定清單
+- `Logger`：回傳 logger 實例，供模組共用
+- `Reload`：重新載入設定來源，若支援 hot-reload 機制，否則為 no-op
 
 ---
 
@@ -52,7 +58,7 @@ type ConfigProvider interface {
 | 預設     | `pkg/config/default.go`                    | 使用 map + ENV 實作設定讀取器   |
 | YAML     | `internal/adapters/config/yaml.go`         | 從指定 YAML 檔案讀取設定         |
 | Remote   | `internal/adapters/config/remote.go`       | 支援 HTTP / gRPC 動態設定服務   |
-| Nop/Fake | `internal/adapters/config/mock_adapter.go` | 提供測試用途的空實作或假資料     |
+| Nop/Fake | `internal/adapters/config/mock_adapter.go`<br>`internal/test/fakes/fake_config.go` | 提供測試用途的空實作或假資料     |
 
 ---
 
@@ -60,6 +66,7 @@ type ConfigProvider interface {
 
 - 可透過注入 `FakeConfigProvider` 模擬錯誤或邊界值
 - 建議單元測試涵蓋 `Reload` 行為與 fallback 邏輯
+- 可加入 `Set()` 方法以便測試程式中直接設定參數（建議僅於測試實作中使用）
 - 結合整合測試驗證模組是否正確依據 config 行為切換
 
 ---

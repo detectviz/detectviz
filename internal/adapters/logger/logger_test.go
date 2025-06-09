@@ -1,10 +1,10 @@
-package logger_test
+package loggeradapter_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/detectviz/detectviz/internal/adapters/logger"
+	loggeradapter "github.com/detectviz/detectviz/internal/adapters/logger"
 	ifacelogger "github.com/detectviz/detectviz/pkg/ifaces/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -16,7 +16,7 @@ func TestZapLogger_Info(t *testing.T) {
 	baseLogger := zap.New(core) // 正確建立 zap.Logger
 	sugar := baseLogger.Sugar()
 
-	zapLogger := logger.NewZapLogger(sugar)
+	zapLogger := loggeradapter.NewZapLogger(sugar)
 	zapLogger.Info("test message", "key", "value")
 
 	if observedLogs.Len() != 1 {
@@ -33,7 +33,7 @@ func TestZapLogger_Info(t *testing.T) {
 }
 
 func TestNopLogger_NoPanic(t *testing.T) {
-	var log ifacelogger.Logger = logger.NewNopLogger()
+	var log ifacelogger.Logger = loggeradapter.NewNopLogger()
 
 	// All calls should be no-op
 	log.Debug("debug")

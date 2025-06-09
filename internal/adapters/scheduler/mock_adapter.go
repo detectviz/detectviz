@@ -1,4 +1,4 @@
-package scheduler
+package scheduleradapter
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package memory
+package memoryadapter
 
 import (
 	"strings"
