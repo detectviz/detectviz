@@ -1,0 +1,458 @@
+# Prompt List 3
+- 在 `internal/modules/engine.go` 中新增 `Engine` 的基礎結構與模組控制流程骨架。
+- 插入以下內容作為初始實作：
+- 根據 `docs/coding-style-guide.md` 的風格指南，統一程式碼風格如下：
+- 修改內容如下：
+- 根據 `docs/coding-style-guide.md` 規範，進一步修正以下內容：
+- 將 `/internal/modules/engine.go` 進一步修正為完全符合 `docs/coding-style-guide.md` 規範：
+- 在 `internal/modules/registry.go` 中新增模組註冊邏輯，定義全域模組名稱對應表與管理方法。
+- 符合 detectviz `coding-style-guide` 規範，加入必要註解。
+- 初始實作如下：
+- 在 `internal/modules/dependencies.go` 中新增模組依賴管理邏輯，用於處理模組間的相依性排序與循環依賴檢查。
+- 初始實作內容如下，符合 `docs/coding-style-guide.md`：
+- 在 `internal/modules/runner.go` 中新增模組啟動與停止控制邏輯，依賴 `Engine`, `Registry`, `DependencyGraph`。
+- 初始實作如下，遵循 `docs/coding-style-guide.md` 標準：
+- 在 `internal/modules/listener.go` 中新增 Listener 實作，註冊健康監控與全域 shutdown 機制。
+- 實作內容如下，依據 `docs/coding-style-guide.md` 撰寫，包含中英文註解：
+- 在 `/Users/zoe/Documents/github/detectviz/todo.md` 中 `## 1. /internal/modules 模組生命週期控制` 區塊中，補上漏列的 interface 定義檔案項目。
+- 插入新項目於 `runner.go` 之後，並保持順序一致性與風格對齊。
+- 新增項目為：
+- 修改後內容如下（僅顯示已變更區段）：
+- 針對 `/Users/zoe/Documents/github/detectviz/todo.md` 中的所有主項目（模組區段 1~7），全面檢查是否缺漏 interface 定義或必要檔案。
+- 根據 `detectviz-source-code.md` 與既有項目風格，補上以下缺漏項目：
+- 在 `pkg/ifaces/modules/modules.go` 中新增模組管理對外介面定義，作為 `internal/modules` 的抽象層。
+- 符合 `detectviz-source-code.md` 規範，包含中英文註解。
+- 內容如下：
+- 更新 `/todo.md`，將 `internal/adapters/modules/`、`internal/registry/`、`internal/bootstrap/` 缺漏檔案依照建議實作順序插入至對應區段。
+- 插入內容如下：
+- 更新 `/Users/zoe/Documents/github/detectviz/todo.md` 中各段的 `詳見《參考歷史紀錄》第 xxx–xxx 行` 說明，對應實際說明區段。
+- 修改以下段落：
+-## 1. /internal/modules 模組生命週期控制（尚未實作）
+-📎 參考說明：詳見《參考歷史紀錄》第 3–95 行
+-## 2. /internal/server 核心伺服器啟動與整合
+-📎 參考說明：詳見《參考歷史紀錄》第 97–194 行
+-## 3. /pkg/registry：Grafana-style K8s-like 資源註冊系統
+-📎 參考說明：詳見《參考歷史紀錄》第 196–324 行
+-## 4. /internal/plugins 插件架構與掃描啟動流程
+-📎 參考說明：詳見《參考歷史紀錄》第 326–360 行
+-## 5. Plugin Config 模組缺漏
+-📎 參考說明：詳見《參考歷史紀錄》第 326–360 行
+-## 6. 測試與樣板補齊
+-📎 參考說明：詳見《參考歷史紀錄》第 360 行以後
+-## 7. 文檔與導引
+-📎 參考說明：詳見《參考歷史紀錄》第 364 行起
+- 在 `/docs/interfaces/modules.md` 中撰寫 `internal/modules` 與 `pkg/ifaces/modules` 相關 interface 說明文件。
+- 內容包含模組說明、interface 清單與使用場景，遵循 detectviz 文件風格。
+- **Engine**：集中註冊與執行模組
+- **Registry**：管理具名模組（提供註冊/查詢）
+- **DependencyGraph**：模組依賴圖與拓撲排序
+- **Runner**：根據依賴啟動模組並反向關閉
+- **Listener**：定期監控模組健康狀態，異常時觸發停機
+- 在 `/Users/zoe/Documents/github/detectviz/todo.md` 中為每個主要模組區段補上缺漏的 `/docs/interfaces/*.md` 文件撰寫項目。
+- 依照現有結構與順序插入，補上以下項目：
+- 在 `/Users/zoe/Documents/github/detectviz/todo.md` 中，補上根據 `detectviz-source-code.md` 檢出的缺漏項目。
+- 各區段新增項目如下：
+- 根據目前實作進度，將 `/todo.md` 中的 `/internal/modules` 模組相關項目標記為已完成。
+- 將以下項目由 `[ ]` 改為 `[x]`，維持格式一致：
+- 在 `internal/adapters/modules/engine_adapter.go` 中建立 `EngineAdapter`，實作 `ModuleEngine` interface（來自 `pkg/ifaces/modules/modules.go`）。
+- 包裝 `*modules.Engine` 作為具體實作來源。
+- 初始內容如下：
+- 根據 `detectviz` 的 `docs/coding-style-guide.md`，修正 `/internal/adapters/modules/engine_adapter.go` 的代碼風格。
+- 調整內容：
+- 在 `internal/adapters/modules/registry_adapter.go` 中新增 `RegistryAdapter` 結構，實作 `ModuleRegistry` 介面（對應於 `pkg/ifaces/modules/modules.go`）。
+- 包裝 `*core.Registry` 並實作 `Register`, `Get`, `List` 方法。
+- 依據 `docs/coding-style-guide.md` 撰寫，中英註解對齊。
+- 在 `internal/adapters/modules/runner_adapter.go` 中新增 `RunnerAdapter`，實作 `ModuleRunner` interface。
+- 包裝 `*core.Runner`，提供 `StartAll`, `StopAll` 方法。
+- 依照 `docs/coding-style-guide.md` 撰寫，中英註解齊備。
+- 在 `internal/adapters/modules/listener_adapter.go` 中新增 `ListenerAdapter`，實作 `ModuleListener` interface。
+- 包裝 `*core.Listener`，提供 `Start`, `Stop` 方法。
+- 符合 `docs/coding-style-guide.md`，包含中英文對照註解。
+- 將 `/todo.md` 中 `/internal/modules` 區段下的以下項目標記為已完成 `[x]`：
+- 同時進行檢查，確認 `/internal/modules` 模組對照 `detectviz-source-code.md` 設計未遺漏任何必要實作。
+- 結論為：**無遺漏項目**。interface、實作、adapters、文檔皆已完成，無需新增項目。
+- 修正 `/todo.md` 中「內部介面與適配器補遺」區段的格式混亂與項目敘述不清問題。
+- 具體調整：
+- 在 `pkg/ifaces/server/server.go` 中建立 `Server` interface，定義伺服器核心生命週期控制。
+- 依照 `docs/coding-style-guide.md` 撰寫風格，加入英文註解與 `zh:` 中文補充說明。
+- 內容如下：
+- 在 `internal/server/server.go` 中新增 `Server` 結構與建構函式，對應 `pkg/ifaces/server.Server` interface。
+- 包含欄位：config、logger、moduleEngine、httpServer（暫為 placeholder）
+- 後續會與 `runner.go`, `instrumentation.go` 配合使用
+- 加入必要的註解與風格一致格式
+- 在 `internal/server/runner.go` 中新增 `Run` 與 `Shutdown` 方法，實作 `pkg/ifaces/server.Server` interface。
+- 方法基於 `Server` 結構，呼叫 `ModuleEngine.RunAll`、`ShutdownAll` 並啟動 `HTTPServer`。
+- 初始實作如下，符合 `docs/coding-style-guide.md`：
+- 在 `internal/server/instrumentation.go` 中新增 HTTP 伺服器監控與健康檢查相關 endpoint。
+- 提供 `/metrics`, `/health`, `/debug/pprof/` 三類監控功能。
+- 使用 Go net/http 與標準 pprof 套件，符合 detectviz 風格與註解格式。
+- 撰寫 `docs/interfaces/server.md` 文件，說明 `/internal/server` 與 `pkg/ifaces/server.Server` interface 結構。
+- 內容依據 detectviz 文件格式，包含模組總覽、interface 說明、使用範例與延伸說明。
+- `Run(ctx)`：啟動模組與 HTTP Server，阻塞執行直到 context 結束
+- `Shutdown(ctx)`：優雅關閉 HTTP Server 與模組，釋放資源
+- 在 `internal/adapters/server/server_adapter.go` 中建立 `ServerAdapter`，實作 `pkg/ifaces/server.Server` 介面。
+- 包裝 `*internal/server.Server`，提供 `Run(ctx)` 與 `Shutdown(ctx)` 方法。
+- 補齊中英文註解，符合 detectviz 風格。
+- 在 `/Users/zoe/Documents/github/detectviz/todo.md` 中：
+- 在 `/Users/zoe/Documents/github/detectviz/todo.md` 的 `## 8. 測試與樣板補齊` 區段中，新增一筆項目：
+- 插入位置在 `internal/test/fakes/fake_server.go` 之後。
+- 在 `internal/test/fakes/fake_server.go` 中新增 `FakeServer` 結構，實作 `pkg/ifaces/server.Server` interface。
+- 用於測試注入時模擬 `Run()` 與 `Shutdown()` 行為。
+- 包含紀錄欄位與中英文註解。
+- 在 `internal/test/server/server_test.go` 中新增 `TestServer_RunAndShutdown` 測試函式。
+- 使用 `fakes.FakeServer` 模擬 `Server` 介面，驗證 Run 和 Shutdown 是否被呼叫。
+- 加入簡易 `context.WithCancel()` 模擬啟動與終止流程。
+- 包含中英文註解。
+- 在 `pkg/ifaces/config/config.go` 中重排 `ConfigProvider` interface 的方法順序，提升邏輯與可讀性。
+- 將通用讀取方法放前面，模組設定次之，系統依賴與操作放最後。
+- 同時優化 `Reload()` 的英文與中文註解。
+- 在 `internal/test/fakes/fake_config.go` 中新增 `FakeConfig` 結構，實作 `pkg/ifaces/config.ConfigProvider` 介面。
+- 提供可設值的 map 模擬行為，並支援基本 Get/GetInt/GetBool 操作與 Reload。
+- 中英文註解完整，符合 detectviz 標準。
+- 修改 `internal/test/fakes/fake_config.go` 中的 `Reload()` 方法，移除錯誤的 `logger.NewError` 呼叫。
+- 改為使用標準 `errors.New("...")` 以符合 Go 標準錯誤實作，並與 `detectviz-source-code.md` 中 logger 套件用途一致（logger 並無提供 NewError 方法）。
+- 在 `pkg/config/default.go` 中：
+- 在 `/internal/bootstrap/config_loader.go` 中新增 `LoadConfig()` 函式。
+- 功能為載入預設組態設定，並回傳 `ConfigProvider` interface。
+- 使用 `pkg/config.NewDefaultProvider()` 實作，並加入中英文註解，符合 detectviz 標準風格。
+- 在 `internal/bootstrap/init.go` 中針對 `Registry` 欄位的宣告進行補強註解與命名明確化。
+- 原為：
+- 並統一格式，使與其他全域變數宣告保持一致。
+- 將 `Init()` 函式拆分為模組化子函式，以提升可維護性與單元測試可行性。
+- 拆分為以下私有函式：
+- 保留原 `Init()` 為統一對外調用接口。
+- 在 `/docs/interfaces/config.md` 中更新以下內容：
+- `Get`：傳回指定 key 的字串值，若不存在回空字串
+- `GetInt`：傳回整數值，無法解析時預設為 0
+- `GetBool`：傳回布林值，支援 "true"/"false" 字串轉換
+- `GetOrDefault`：若指定 key 無值，則傳回提供的 default 值
+- `GetCacheConfig`：回傳快取模組所需的結構設定
+- `GetNotifierConfigs`：回傳通知通道模組的設定清單
+- `Logger`：回傳 logger 實例，供模組共用
+- `Reload`：重新載入設定來源，若支援 hot-reload 機制，否則為 no-op
+- 可透過注入 `FakeConfigProvider` 模擬錯誤或邊界值
+- 建議單元測試涵蓋 `Reload` 行為與 fallback 邏輯
+- 可加入 `Set()` 方法以便測試程式中直接設定參數（建議僅於測試實作中使用）
+- 結合整合測試驗證模組是否正確依據 config 行為切換
+- 在 `internal/bootstrap/wire.go` 中撰寫系統元件注入流程的預設建構器 `BuildServer()`。
+- 該函式負責注入 Config, Logger, Modules 與 Server，為手動組裝流程。
+- 後續可改為 wire build，但目前先保留簡易組合邏輯，符合 detectviz 架構與註解標準。
+- 將 `/todo.md` 中的 **第 4 項：/internal/bootstrap 系統注入與模組整合** 完成狀態標記，並補上實作中額外建立的項目。
+- 將下列項目標記為 `[x]`：
+- 補上已實作但原先缺漏追蹤的項目：
+- 在 `/todo.md` 最後新增一個區段 `## 11. 抽象模組建置（Importer, Versioning, LibraryElements）`
+- 加入三個抽象模組的任務，每個模組包含 interface、核心結構與文檔項目
+- 在 `/todo.md` 最後新增一個區段 `## 12. 抽象模組配套測試與適配器建置（Importer, Versioning, LibraryElements）`
+- 將 Importer、Versioning、LibraryElements 三個模組所需的 fake、test、adapter、bootstrap 項目加入追蹤
+- 在 `/todo.md` 最後新增一節：
+- 在 `/todo.md` 第 4 項 `/internal/adapters 與對應 interface` 區塊下，補充依據目錄現況檢查出的缺漏項目
+- 在 `/todo.md` 的 **第 4 項 `/internal/adapters 與對應 interface`** 區塊下方，補上以下缺漏項目，共 3 項，補齊原本漏列者。
+- 在 `/docs/coding-style-guide.md` 的「## 介面與實作命名原則」段落中，補充一段說明，描述 `package xxxadapter` 命名慣例與建議使用情境
+- 為避免與 `pkg/ifaces/metric` 等核心介面衝突，建議 adapter 的實作包使用 `package xxxadapter` 命名，例如 `metricsadapter`, `loggeradapter`
+- 這有助於區分：
+- 匯入時可維持一致，例如：
+- 適用情境：
+- 在 `pkg/ifaces/registry/registry.go` 中新增 GVK 與 Registry interface 定義
+- 對齊 detectviz 架構與 GVK 設計原則
+- 在 `pkg/ifaces/registry/registry.go` 中依據 `docs/coding-style-guide.md` 修正代碼風格：
+- 在 `internal/adapters/metrics/query_adapter.go` 中進行以下風格修正，對齊 `docs/coding-style-guide.md`：
+- 為 `pkg/ifaces/registry/registry.go` 內部代碼統一風格，依據 `docs/coding-style-guide.md`：
+- 修正 `pkg/ifaces/registry/registry.go` 所有註解，補上中英文對照，並加上完整句點。
+- 統一風格：中英文分行，英文優先，符合 `docs/coding-style-guide.md`
+- 建立 `/docs/interfaces/registry.md` 文件，說明 detectviz 中 Registry 的用途、結構與實作指引。
+- 內容包含：模組目的、GVK 定義、主要介面、模組範例、實作建議
+- `Group`: `core`, `datasource.grafana.com`
+- `Version`: `v1`, `v1beta1`
+- `Kind`: `Datasource`, `AlertRule`
+- `pkg/registry/registry.go` should provide a memory-based implementation (using `map[GVK]map[string]Resource]`).
+- `internal/registry/loader.go` should initialize schema validators and kind mappings.
+- `plugins` can register new GVKs during lifecycle setup.
+- `versioning`: Capture version history on Create/Update/Delete.
+- `importer`: Uses registry to store imported data.
+- `libraryelements`: Each ElementKind can be a resource type managed via Registry.
+- 修正 `/docs/interfaces/registry.md` 文件格式與內容，對齊 `docs/interfaces/modules.md` 樣式：
+- Group：`core`、`datasource.grafana.com`
+- Version：`v1`、`v1beta1`
+- Kind：`Datasource`、`AlertRule`
+- `pkg/registry/registry.go` 應提供記憶體版 Registry 實作，可用 `map[GVK]map[string]Resource` 儲存。
+- `internal/registry/loader.go` 應負責初始化 GVK 與 schema。
+- plugins 啟動時可透過 `Register(gvk, handler)` 註冊自己支持的資源類型。
+- 在 `pkg/registry/registry.go` 中實作記憶體版 Registry，支援 GVK-based CRUD 註冊與操作
+- 實作對應 `pkg/ifaces/registry.Registry` 的介面
+- 使用 `sync.RWMutex` 保護記憶體存取
+- 修正 `/pkg/registry/registry.go` 的代碼格式，對齊 `docs/coding-style-guide.md` 中風格規範。
+- 調整內容包括：
+- 在 `pkg/registry/apis/host/register.go` 中建立初始註冊檔案
+- 註冊 GVK = {Group: "core", Version: "v1", Kind: "Host"}
+- 匯出 `RegisterHost` 函式，提供對外註冊用
+- 包含一個記憶體 map 的簡易 handler 實作（符合 interface）
+- 在 `internal/test/registry/host_registry_test.go` 中建立測試檔案
+- 測試 `pkg/registry/apis/host.RegisterHost()` 註冊流程與記憶體 CRUD 行為
+- 使用 `pkg/registry.NewMemoryRegistry()` 建立 registry 實例
+- 在 `internal/test/registry/host_registry_test.go` 修正以下問題：
+- 建立 `pkg/registry/apis/datasource/register.go` 檔案內容
+- 註冊 GVK = {Group: "core", Version: "v1", Kind: "Datasource"}
+- 提供記憶體型 Datasource handler 實作並註冊
+- 在 `internal/test/registry/datasource_registry_test.go` 中新增測試檔案
+- 測試 Datasource GVK 的註冊與 CRUD 流程
+- 對應 `pkg/registry/apis/datasource.RegisterDatasource`
+- 將 `/todo.md` 中第 6 項的以下任務標記為已完成：
+- 在 `/docs/interfaces/registry.md` 補充一個段落說明「如何註冊資源模組」與呼叫範例
+- 插入位置：在「## 實作建議」之後、「## 相關模組」之前
+- 對應 GVK 定義（Group-Version-Kind）
+- Resource 實作
+- ResourceHandler 實作（記憶體或外部來源）
+- `RegisterX(r Registry)` 函式對外註冊
+- 將 `/todo.md` 中第 6 項 `/pkg/registry` 的任務狀態更新如下：
+- 並新增尚未列出但必要的實作檔案至 `schemas/` 與 `kinds/`
+- 在 `pkg/registry/schemas/host.schema.yaml` 中新增 Host 資源的 YAML Schema 定義
+- 包含 metadata、spec 欄位，支援簡易驗證，符合 detectviz 的 GVK 架構原則
+- 在 `pkg/registry/schemas/index.yaml` 中新增所有 GVK 對應的 schema 檔案註冊資訊
+- 每筆記錄包含 group、version、kind、path
+- 在 `pkg/registry/schemas/datasource.schema.yaml` 中新增 Datasource 資源的 YAML Schema 定義
+- 包含 metadata 與 spec 結構，對應基本屬性如 type、url、basicAuth 等欄位
+- 在 `pkg/registry/kinds/validator.go` 中新增 CUE 驗證器初始實作
+- 提供 `Validate(schemaPath string, data []byte) error` 函式，用來驗證資料是否符合 schema
+- 需安裝 CUE 套件 `"cuelang.org/go/cue"`
+- 在 `pkg/registry/kinds/validator.go` 修正兩個錯誤：
+- 修正 `validator.go` 中兩處錯誤：
+- 使用正確方式將 YAML byte 轉為 string 再編譯
+- 在 `pkg/registry/kinds/testdata/valid_host.yaml` 中新增一筆符合 `host.schema.yaml` 結構的合法範例資料
+- 含 `apiVersion`、`kind`、`metadata.name` 與完整 `spec` 欄位
+- 在 `pkg/registry/kinds/testdata/invalid_host.yaml` 中新增不符合 `host.schema.yaml` 的資料，用於驗證 schema 驗證失敗邏輯
+- 錯誤包含：
+- 建立 `/internal/test/registry/validator_test.go` 測試 CUE 驗證器是否能正確驗證合法與不合法的 host YAML
+- 測試目標為 `pkg/registry/kinds.Validate`
+- 在 `pkg/registry/kinds/validator.go` 中加入錯誤標準化類型 `SchemaValidationError`
+- 新增 `IsSchemaValidationError` 方法方便測試與上層辨識錯誤類型
+- 修改 `Validate()` 中錯誤傳回方式，符合統一格式
+- 在 `internal/test/registry/validator_test.go` 中加入對錯誤類型的驗證
+- 確保驗證錯誤時為 `SchemaValidationError`
+- 引入 `IsSchemaValidationError()` 做為判斷依據
+- 將 `/todo.md` 中第 6 項 `/pkg/registry` 相關的驗證模組任務標記為已完成：
+- 在 `internal/registry/loader.go` 中新增 schema 載入邏輯模組
+- 掃描 `/pkg/registry/schemas/index.yaml` 並載入所有 GVK 與 schema 對應關係
+- 為後續 Registry 或驗證模組提供註冊依據
+- 將 `/todo.md` 中第 6 項 `/pkg/registry` 區塊中的項目 `internal/registry/loader.go` 標記為已完成
+- 在 `docs/interfaces/registry.md` 的「實作建議」與「註冊範例與使用方式」之間新增一節
+- 標題為 `## Schema 載入與驗證`
+- 說明 `index.yaml`、schema 結構、以及驗證流程與實作方式
+- 使用 `Validate(path string, data []byte)` 對任意 YAML 資料進行結構驗證。
+- 錯誤會統一包裝為 `SchemaValidationError`，方便上層處理。
+- 驗證資料來源可為上傳檔案、API 請求、匯入資料等。
+- 在 `internal/registry/engine.go` 中建立資源註冊系統的核心註冊器實作
+- 提供 `Engine` 結構，持有已註冊的 handler 與 schema 對應表，支援註冊與查詢
+- 為後續 plugin 或 API 提供註冊介面與查詢方法
+- 在 `internal/registry/decoder.go` 建立 decoder 實作
+- 提供 `DecodeAndValidate` 方法，支援 YAML 檔案讀取並透過 kinds.Validator 驗證
+- 同時回傳 GVK 與內容 bytes，供後續註冊或儲存
+- 在 `internal/test/registry/decoder_test.go` 中新增測試
+- 驗證 `DecodeAndValidate()` 對 valid 與 invalid host YAML 的行為
+- 使用 `host.schema.yaml` 作為驗證依據
+- 將 `/todo.md` 中第 6 項 `/pkg/registry` 的以下兩個項目標記為已完成：
+- 將 `/internal/test/registry/decoder_test.go` 納入測試驗證區塊，並標記為已完成：
+- 在 `/docs/interfaces/registry.md` 最後補充一節說明與 `Engine`、`Decoder` 有關的整合應用與用途
+- 新增段落標題：`## Engine 與 Decoder 整合應用`
+- 補充 Engine 負責註冊處理器與 schema path，Decoder 解析與驗證資源檔案的流程
+- 外部匯入模組（如 importer）
+- 元件組裝與還原（如 libraryelements）
+- Plugin 動態擴充資源類型
+- 將 `/todo.md` 中第 6 項 `/pkg/registry` 區段的最後一個未完成項目 `docs/interfaces/registry.md` 標記為已完成：
+- 在 `pkg/importer/interface.go` 中建立 importer interface 定義
+- 主要包含 `Importer` interface，提供 `Name()`, `GVK()`, `Load()` 方法
+- 搭配 `registry.GVK` 作為資源識別類型
+- 在 `docs/interfaces/importer.md` 中新增 Importer 介面說明文件
+- 包含 interface 定義、方法說明、用途範例與設計原則
+- 從 JSON/YAML 檔案載入一批 `Host` 資源
+- 轉換第三方監控系統匯出的格式為內部資源
+- 載入 CSV 並轉換為 `Datasource` 結構
+- 每個 Importer 實作應僅處理一組 GVK
+- 應明確分離資料來源與資料格式解析責任
+- 可由 plugin 或系統模組透過統一介面載入匯入器模組
+- 將第 7 項 Importer 小節中的以下項目標記為已完成：
+- 建立 `internal/test/fakes/fake_importer.go` 檔案
+- 提供符合 Importer 介面的假件 `FakeImporter`，支援測試匯入流程
+- 回傳預設 GVK 與假資料
+- 建立 `internal/test/importer/importer_test.go`
+- 測試假件 `FakeImporter` 匯入流程與結果正確性
+- 驗證 GVK、名稱、回傳資源數量等欄位
+- 將 `/todo.md` 第 7 項 Importer 模組內以下兩項任務標記為已完成：
+- 同步更新第 10 項測試補齊區塊中 Importer 模組測試項目為已完成：
+- 在 `internal/adapters/importer/registry.go` 中建立 Importer 註冊表實作
+- 提供 `Registry` 結構，可註冊與查詢 Importer
+- 適用於後續 plugin 或 CLI 擴充使用
+- 在 `internal/adapters/importer/registry_test.go` 中撰寫單元測試
+- 測試 Importer 註冊、重複註冊、查詢、列出行為
+- 使用內嵌假件 struct 模擬 importer.Importer
+- 將 `/todo.md` 中第 7 項 Importer 模組的下列項目標記為已完成：
+- 同步更新第 10 項測試補齊區塊 Importer 模組段落：
+- 為 `/internal/test/importer/importer_test.go` 檔案中的所有函式與結構體補上說明註解，符合 detectviz 風格與中英對照風格。
+- 為 `/internal/test/registry/decoder_test.go` 檔案中所有函式加上中英文對照註解，符合 detectviz 文件風格
+- 為 `internal/test/registry/validator_test.go` 中所有函式加上符合 detectviz 標準的中英文對照註解
+- 為 `/internal/adapters/importer/registry_test.go` 中所有函式與型別補上中英文註解，符合 detectviz 標準
+- 為 `internal/test/fakes/fake_importer.go` 中所有項目補上中英文對照註解，符合 detectviz 專案風格。
+- 建立 `pkg/versioning/interface.go` 並撰寫版本控制模組的抽象介面定義
+- 提供 `Versioned` 與 `VersionManager` 兩個核心 interface
+- 符合 detectviz 模組化與 interface-driven 設計風格
+- 在 `docs/interfaces/versioning.md` 建立 Versioning 介面說明文件
+- 說明 Versioned 與 VersionManager 的用途、方法與使用情境
+- 每個匯入或註冊的資源皆可實作 Versioned，提供統一版本查詢能力。
+- 可搭配匯入器、匯出器或 plugin lifecycle 判斷版本差異。
+- `Compare("v1.2.0", "v1.1.9")` → `1`
+- `Compare("v1.0.0", "v1.0.0")` → `0`
+- `Compare("v0.9.0", "v1.0.0")` → `-1`
+- Plugin 掛載前檢查版本衝突
+- Importer 載入資料前比對是否為較舊版本
+- Dashboard 與 Library Element 支援版本還原與更新
+- 將 `/todo.md` 第 7 項 Versioning 小節中的以下兩項標記為已完成：
+- 在 `pkg/versioning/model.go` 中新增版本資源與儲存模型結構實作
+- 補充 Versioned 與 VersionManager 的預設實作 VersionMap
+- 在 `pkg/versioning/memory.go` 中新增記憶體版版本儲存實作 `MemoryStore`
+- 實作 `VersionManager` 介面，供測試與輕量部署使用
+- 建立 `/internal/test/versioning/versioning_test.go`，驗證 `MemoryStore` 的版本註冊、查詢與比較功能
+- 測試 `Register`、`Get`、`Compare` 回傳正確結果
+- 將 `/todo.md` 第 7 項 Versioning 模組中的以下項目標記為已完成：
+- 在 `internal/adapters/versioning/store_adapter.go` 中建立 store adapter 實作
+- 提供 `StoreAdapter` 結構，包裝 `versioning.VersionManager` 介面，便於後續依賴注入與 mock 測試使用
+- 建立 `/internal/adapters/versioning/store_adapter_test.go`，測試 StoreAdapter 包裝邏輯
+- 使用 versioning.NewMemoryStore() 作為內部版本儲存實作
+- 將 `/todo.md` 中第 7 項 Versioning 模組內的以下項目標記為已完成：
+- 建立 `internal/bootstrap/versioning_loader.go`，初始化版本儲存機制
+- 使用 versioningadapter 封裝記憶體實作
+- 提供 `InitVersioning()` 函式供外部模組注入使用
+- 將 `/todo.md` 中 Versioning 模組第 7 項中的以下項目標記為已完成：
+- 將 `/todo.md` 中 Versioning 模組內的以下項目標記為已完成：
+- 同步檢查其他 Versioning 相關項目，已完成的項目包括：
+- 僅剩：
+- 在 `internal/test/fakes/fake_versionstore.go` 建立版本儲存假件 `FakeVersionStore`
+- 符合 `versioning.VersionManager` 介面
+- 支援測試情境注入與版本操作模擬
+- 在 `/docs/interfaces/versioning.md` 的最下方新增一節說明 VersionManager 的測試與假件使用方式，補充 FakeVersionStore 測試用途。
+- 使用 map 儲存註冊資源
+- 實作 `Register()`、`Get()`、`Compare()` 方法
+- 支援注入 `CompareFn` 以模擬任意版本比較行為
+- 適合測試 plugin 掛載、importer 載入前後版本差異行為
+- 將 `/todo.md` 中 Versioning 模組的以下項目標記為已完成：
+- 在 `pkg/libraryelements/interface.go` 中建立 LibraryElement 模組核心 interface 定義
+- 提供 `Element`, `ElementStore`, `ElementRenderer` 等抽象介面
+- 符合 detectviz 專案的標準模組化與擴充設計風格
+- 撰寫 `docs/interfaces/libraryelements.md`，說明 LibraryElements 模組介面設計與用途
+- 可整合 Importer 將外部 Grafana panel 載入為 Element
+- 支援 Library-based Template 重複使用與版本控管
+- 結合 Layout 元件進行頁面組裝與嵌套
+- 將 `/todo.md` 第 7 項 LibraryElements 區塊中的以下項目標記為已完成：
+- 在 `pkg/libraryelements/types.go` 中新增 Element 預設實作 `BaseElement`
+- 提供欄位與對應方法，實作 `libraryelements.Element` 介面
+- 補上中英文對照註解
+- 在 `pkg/libraryelements/store_memory.go` 中實作記憶體版 ElementStore，名為 `MemoryStore`
+- 實作 `Save`、`FindByID`、`Delete`、`List` 方法
+- 加上中英文註解
+- 在 `internal/test/libraryelements/store_test.go` 中撰寫 MemoryStore 的單元測試
+- 驗證 Save、FindByID、Delete 與 List 行為正確
+- 使用 BaseElement 作為測試資料結構
+- 將 `/todo.md` 中 LibraryElements 模組的以下兩項標記為已完成：
+- 在 `pkg/libraryelements/registry.go` 中建立元件註冊表 Registry 實作
+- 提供註冊與查詢支援，可用於 renderer 或自定義 element 類型延伸
+- 在 `internal/test/libraryelements/registry_test.go` 中撰寫 Registry 的單元測試
+- 驗證 RegisterRenderer 與 GetRenderer 功能，並處理重複註冊錯誤
+- 將 `/todo.md` 中 LibraryElements 模組相關項目標記為已完成：
+- 在 `internal/test/fakes/fake_element_service.go` 中新增 `FakeElementStore` 假件
+- 實作 `libraryelements.ElementStore` 介面，支援測試用儲存行為
+- 將 `/todo.md` 中 LibraryElements 模組下的項目：
+- 在 `internal/adapters/libraryelements/service_adapter.go` 中新增 `ServiceAdapter` 實作
+- 包裝 `libraryelements.ElementStore`，提供測試與注入使用
+- 補上中英文對照註解
+- 在 `internal/adapters/libraryelements/service_adapter_test.go` 撰寫單元測試
+- 測試 `ServiceAdapter` 包裝行為是否正確委派給內部 `ElementStore`
+- 使用 `FakeElementStore` 假件模擬行為
+- 為 `TestServiceAdapter_CRUD` 測試函式補上中英文對照註解，符合 detectviz 專案風格
+- 在 `internal/bootstrap/elements_loader.go` 建立元件服務初始化函式 `InitElementService`
+- 回傳記憶體實作的 ElementStore 並封裝為 ServiceAdapter
+- 將 `/todo.md` 第 7 項 LibraryElements 區塊中的以下項目標記為已完成：
+- 在 `docs/interfaces/libraryelements.md` 最下方新增一節，說明測試與假件支援
+- 支援 `Save`、`FindByID`、`Delete`、`List` 全部操作
+- 可用於測試 ServiceAdapter、Bootstrap 元件注入等場景
+- 不依賴任何外部儲存或序列化機制
+- 建立 `pkg/ifaces/plugins/plugin.go`，定義插件通用介面 `Plugin`
+- 支援初始化、關閉與版本查詢功能
+- 補充中英文對照註解，符合 detectviz interface 設計規範
+- 在 `docs/interfaces/plugins.md` 建立 plugins 介面說明文件，對齊 detectviz 標準格式
+- 每個插件皆需明確實作 `Plugin` 介面，支援註冊、掛載與卸載操作
+- 可透過 Registry 檢查版本差異、註冊至 Plugin Manager 統一管理
+- 可搭配 eventbus, metrics, notifier 等模組建立 plugin 擴充架構
+- `AlertPlugin`, `DataSourcePlugin`, `RendererPlugin` 等具類型擴充的插件接口
+- 支援動態掃描 `/internal/plugins/` 或 `/plugins/` 目錄註冊 Plugin 實例
+- 可與版本控管模組整合，檢查相容性與載入優先順序
+- 在 `pkg/registry/apis/plugin/registry.go` 中新增 Plugin 註冊表
+- 提供插件註冊與查詢功能
+- 符合 `plugins.Plugin` interface 設計與 detectviz 標準風格
+- 在 `internal/test/registry/plugin_registry_test.go` 撰寫測試 Plugin Registry 的註冊與查詢功能
+- 使用測試用假件 `testPlugin` 實作 `plugins.Plugin` 介面
+- 將 `/todo.md` 中第 8 項 Plugin 架構的以下項目標記為已完成：
+- 建立 `internal/plugins/plugin.go`，負責掃描與載入 plugins 目錄下所有可註冊插件
+- 掃描目錄並透過 `Init()` 啟動插件，然後註冊至 plugin registry
+- 在 `internal/plugins/manager/registry.go` 中新增插件註冊與查詢管理中心
+- 實作與 `plugins.Plugin` 介面對應的註冊與查詢邏輯
+- 在 `internal/plugins/manager/registry_test.go` 撰寫單元測試，驗證 `ManagerRegistry` 插件註冊與查詢邏輯
+- 使用簡單的假件結構 `testPlugin` 實作 `plugins.Plugin` 介面
+- 在 `internal/plugins/manager/loader.go` 中實作 `ScanPlugins` 函式
+- 提供從本地目錄掃描插件的基本邏輯（CDN 掃描留作擴充）
+- 支援 Plugin 名稱、版本資訊列出與日誌提示
+- 在 `internal/plugins/manager/loader_test.go` 中撰寫測試範本
+- 模擬掃描 plugins 目錄，但不載入實際 `.so` 檔案
+- 檢查空目錄或異常是否正確回傳錯誤
+- 在 `internal/plugins/manager/process.go` 中建立 PluginProcess 管理模組
+- 提供插件啟動與停止生命週期管理方法
+- 暫以模擬行為表示，後續可擴充為啟動 gRPC/server/socket 程式
+- 在 `internal/plugins/manager/process_test.go` 撰寫單元測試
+- 模擬啟動與停止假指令的 plugin process，驗證 ProcessManager 行為
+- 測試不需啟動實際 plugin，使用 `/bin/sleep` 做延遲模擬
+- 在 `internal/plugins/manager/lifecycle.go` 中新增 `PluginLifecycleManager`
+- 實作插件初始化、啟動、關閉等完整流程
+- 整合 `ManagerRegistry` 與 `ProcessManager`
+- 在 `internal/plugins/manager/lifecycle_test.go` 中撰寫 `PluginLifecycleManager` 的單元測試
+- 使用內嵌假件實作 `plugins.Plugin` 介面，驗證註冊、初始化、關閉流程是否正確呼叫
+- 在 `docs/interfaces/plugins.md` 最下方新增一節，補充 Plugin 介面的測試與假件支援內容
+- `internal/plugins/manager/registry_test.go`
+- `internal/plugins/manager/lifecycle_test.go`
+- 動態註冊測試、Init/Close 執行驗證等
+- 在 `/todo.md` 中將第 8 項 Plugin 架構下的以下項目標記為已完成：
+- 在 `internal/test/fakes/fake_engine.go` 中新增 `FakeEngine` 假件
+- 實作 `engine.Engine` 介面（假設包含 Start、Stop、Status 方法）
+- 支援單元測試中注入與行為驗證
+- 在 `internal/adapters/modules/engine_adapter_test.go` 中新增單元測試
+- 測試 `EngineAdapter` 包裝行為是否正確調用 `core.Engine` 的方法
+- 使用 mock 或假件模擬 `core.Engine`
+- 將 `/internal/modules/engine.go` 中的 `Engine` 結構改為 interface，並改寫原本的 struct 實作為非導出型別 `engineImpl`，符合 interface-driven 設計
+- 調整 `NewEngine` 返回 interface，並修改方法接收者為 `engineImpl` 指標
+- 在 `pkg/ifaces/modules/modules.go` 新增 `Engine` interface 定義
+- 介面包含註冊模組、啟動所有模組、關閉所有模組的方法
+- 補上中英文對照註解，符合 detectviz 風格
+- 將 `internal/modules/listener.go` 中 `Listener` 結構的 `engine` 欄位由 `*Engine` 修改為 `Engine`（interface）
+- 調整 `NewListener` 函式參數與初始化對應修改
+- 修正 `internal/adapters/modules/engine_adapter.go`
+- 將 `EngineAdapter.engine` 欄位從指向 struct `*core.Engine` 改為 interface `core.Engine`
+- `NewEngineAdapter` 接收 interface `core.Engine` 以符合 interface 設計
+- 確保 `EngineAdapter` 使用 interface 方法，增強彈性與測試便利性
+- 修正 `internal/adapters/modules/engine_adapter_test.go` 測試檔
+- 移除錯誤的 `(*core.Engine)(fake)` 強制轉型，改為直接以 interface 傳入 `fakeEngine`
+- 確保 `fakeEngine` 實作 `core.Engine` interface 方法
+- 修正註解與格式符合 detectviz 風格
+- 修改 `internal/adapters/modules/engine_adapter_test.go`
+- 將 `fakeLifecycleModule` 實作改為 `internal/modules.Module` interface
+- `fakeEngine` 實作改為 `internal/modules.Engine` interface
+- 測試中 `EngineAdapter` 使用 `internal/modules.Engine` interface
+- 移除對 `iface.LifecycleModule` 的依賴，改用 `internal/modules.Module`
+- 建立 `/internal/test/modules/runner_test.go` 測試檔
+- 實作 Engine、Registry、Runner 三模組的整合注入測試範本
+- 使用假件 `fakeModule` 模擬模組生命週期
+- 驗證註冊、啟動、關閉等流程正常運作
+- 更新 `/todo.md` ，將符合已完成的測試項目標記修正及補充
+- 更新 `/docs/interfaces/modules.md` 文件，調整使用範例中 `runner.StartAll` 改為 `runner.Start`，並補充 interface `Engine` 定義相關段落
+- **Engine**：集中註冊與執行模組
+- **Registry**：管理具名模組（提供註冊/查詢）
+- **DependencyGraph**：模組依賴圖與拓撲排序
+- **Runner**：根據依賴啟動模組並反向關閉
+- **Listener**：定期監控模組健康狀態，異常時觸發停機
+- 修正 `/internal/test/integration/bootstrap_test.go`，移除未使用變數 `logStr`，改用 `logStr` 字串判斷日誌包含內容
+- 新增 `strings` package 引入

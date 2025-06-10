@@ -28,4 +28,4 @@ go.work.sum
 # custom
 .vscode
 .DS_Store
-todo.md
+todo-history.md
