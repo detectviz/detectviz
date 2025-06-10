@@ -16,7 +16,7 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-docs-tmp/
+docs-tmp
 docs-tmp/*.md
 
 # Go workspace file
