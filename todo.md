@@ -60,18 +60,18 @@
 interface: pkg/ifaces/{module}/*
 adapter: internal/adapters/{module}/*
 
-- [ ] internal/adapters/eventbus/metric.go 測試缺失，需補對應 adapter 測試。
-- [ ] internal/adapters/logger/zap_adapter.go 未補對應單元測試。
-- [ ] internal/test/fakes/fake_logger.go 尚未建立，用於測試注入與日誌檢查。
-- [ ] internal/test/fakes/fake_notifier.go 尚未建立，用於測試多 notifier 整合。
-- [ ] internal/adapters/notifier/email_adapter_test.go 尚未補單元測試。
-- [ ] internal/adapters/eventbus/host.go 測試缺失，需補對應 adapter 測試。
-- [ ] internal/adapters/eventbus/task.go 測試缺失，需補對應 adapter 測試。
-- [ ] internal/adapters/eventbus/alert.go 測試缺失，需補 alert handler 對應事件處理測試。
-- [ ] internal/test/fakes/fake_eventbus.go 尚未建立，供 plugin 匯入測試使用。
-- [ ] internal/adapters/notifier/slack_adapter.go 未補單元測試。
-- [ ] internal/adapters/notifier/webhook_adapter.go 未補單元測試。
-- [ ] internal/adapters/logger/nop_adapter.go 未補單元測試。
+- [x] internal/adapters/eventbus/metric.go 測試缺失，需補對應 adapter 測試。
+- [x] internal/adapters/logger/zap_adapter.go 未補對應單元測試。
+- [x] internal/test/fakes/fake_logger.go 尚未建立，用於測試注入與日誌檢查。
+- [x] internal/test/fakes/fake_notifier.go 尚未建立，用於測試多 notifier 整合。
+- [x] internal/adapters/notifier/email_adapter_test.go 尚未補單元測試。
+- [x] internal/adapters/eventbus/host.go 測試缺失，需補對應 adapter 測試。
+- [x] internal/adapters/eventbus/task.go 測試缺失，需補對應 adapter 測試。
+- [x] internal/adapters/eventbus/alert.go 測試缺失，需補 alert handler 對應事件處理測試。
+- [x] internal/test/fakes/fake_eventbus.go 尚未建立，供 plugin 匯入測試使用。
+- [x] internal/adapters/notifier/slack_adapter.go 未補單元測試。
+- [x] internal/adapters/notifier/webhook_adapter.go 未補單元測試。
+- [x] internal/adapters/logger/nop_adapter.go 未補單元測試。
  
 ## 10. 測試與樣板補齊: 確保前 4 步有可運行測試與測試替身
 - [ ] pkg/ifaces/test/test.go：模組與插件測試 interface。可定義模組驗證器、模擬元件等輔助介面，簡化測試撰寫。

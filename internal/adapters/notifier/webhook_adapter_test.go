@@ -3,7 +3,7 @@ package notifieradapter
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -22,7 +22,7 @@ func TestWebhookNotifier_Send(t *testing.T) {
 	var capturedURL string
 	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		capturedURL = req.URL.String()
-		return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBuffer(nil))}, nil
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBuffer(nil))}, nil
 	})}
 	n := NewWebhookNotifier("hook", log, client)
 	msg := notifieriface.Message{Target: "http://example.com", Title: "hi", Content: "msg"}
@@ -41,7 +41,7 @@ func TestWebhookNotifier_Send(t *testing.T) {
 func TestWebhookNotifier_Notify(t *testing.T) {
 	log := &fakes.FakeLogger{}
 	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBuffer(nil))}, nil
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBuffer(nil))}, nil
 	})}
 	n := NewWebhookNotifier("hook", log, client)
 	if err := n.Notify("title", "content"); err != nil {
