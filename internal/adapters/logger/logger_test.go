@@ -13,7 +13,7 @@ import (
 
 func TestZapLogger_Info(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
-	baseLogger := zap.New(core) // 正確建立 zap.Logger
+	baseLogger := zap.New(core) // zh: 正確建立 zap.Logger
 	sugar := baseLogger.Sugar()
 
 	zapLogger := loggeradapter.NewZapLogger(sugar)
@@ -47,5 +47,24 @@ func TestNopLogger_NoPanic(t *testing.T) {
 
 	if log2 == nil {
 		t.Error("NopLogger should return non-nil instance")
+	}
+}
+
+func TestZapLogger_WithFieldsAndNamed(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.InfoLevel)
+	base := zap.New(core).Sugar()
+	log := loggeradapter.NewZapLogger(base)
+	child := log.Named("child").WithFields(map[string]any{"k": "v"})
+	child.Info("msg")
+	entries := observedLogs.All()
+	if len(entries) == 0 {
+		t.Fatal("no log entry recorded")
+	}
+	entry := entries[len(entries)-1]
+	if entry.Message != "msg" {
+		t.Errorf("unexpected message: %s", entry.Message)
+	}
+	if entry.LoggerName != "child" {
+		t.Errorf("expected logger name child, got %s", entry.LoggerName)
 	}
 }
