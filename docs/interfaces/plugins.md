@@ -32,6 +32,27 @@ type Plugin interface {
 
 ---
 
+## 插件管理實作
+
+`plugins/manager` 模組已實作完整的 Plugin 管理功能，包含：
+
+- `loader.go`：動態載入 Plugin 實例
+- `registry.go`：集中註冊與查詢 Plugin
+- `process.go`：執行 Init/Close 流程控制
+- `lifecycle.go`：啟用/關閉 Plugin 的生命週期控制器
+
+該模組會自動掃描 `internal/plugins/plugins/*` 目錄下所有符合 `Plugin` 介面的實作，並在應用啟動時載入與初始化。
+
+註冊範例如下：
+
+```go
+func init() {
+  manager.RegisterPlugin(&MyPlugin{})
+}
+```
+
+---
+
 ## 延伸設計
 
 Plugin Interface 可作為以下模組的基礎：
@@ -69,3 +90,11 @@ func (p *mockPlugin) Close() error    { p.closed = true; return nil }
 - 動態註冊測試、Init/Close 執行驗證等
 
 此測試模式支援 plugin 模組邏輯抽換與邊界行為驗證，便於未來新增 plugin 類型時複用。
+
+---
+
+## 相關模組與參考文件
+
+- `internal/plugins/manager/loader.go`
+- `internal/plugins/manager/registry.go`
+- [docs/architecture/plugins.md](../architecture/plugins.md)
