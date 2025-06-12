@@ -21,8 +21,8 @@ internal/handlers/
 │   └── alert_handler.go
 ├── rule/v0alpha1/
 │   └── rule_handler.go
-├── report/v0alpha1/
-│   └── report_handler.go
+├── notifier/v0alpha1/
+│   └── notifier_handler.go
 └── common/
     └── response.go      # JSON 包裝、統一錯誤處理
 ```

@@ -1,0 +1,641 @@
+# DetectViz 配置文件
+# 基於 Grafana 架構的 DetectViz 平台配置檔案
+# 請勿在 DetectViz 安裝後修改此檔案
+
+# 應用程式執行模式，可選值：production, development
+app_mode: "production"
+
+# 實例名稱，預設使用環境變數 HOSTNAME 或主機名稱
+instance_name: "${HOSTNAME}"
+
+# 熱重載功能（僅限開發模式）
+hot_reload: true
+
+#################################### 路徑設定 ###############################
+paths:
+  # DetectViz 資料儲存目錄（暫存檔案、會話、SQLite 資料庫等）
+  data: "./data"
+
+  # 暫存資料生命週期，超過此時間的暫存檔案將被清理
+  temp_data_lifetime: "24h"
+
+  # 日誌檔案輸出目錄
+  logs: "./log"
+
+  # 外掛程式目錄
+  plugins: "./conf/plugins"
+
+  # 資源初始化配置目錄
+  provisioning: "./conf/provisioning"
+
+#################################### 節點設定 ###############################
+node:
+  # 節點名稱識別符
+  name: "node-1"
+
+  # 節點類型（角色定義）
+  type: "monitor"
+
+  # 節點標籤（用於調度與篩選）
+  labels:
+    role: "edge"
+    zone: "tw1"
+
+  # 可用區域或機房標識
+  zone: "tw1"
+
+  # 所屬叢集名稱
+  cluster: "cluster-a"
+
+  # 節點優先度（數值越小優先級越高）
+  priority: 1
+
+  # 是否為備援節點
+  standby: false
+
+  # 節點是否啟用
+  enabled: true
+
+  # 節點額外中繼資料
+  meta:
+    rack: "rack1"
+
+#################################### 伺服器設定 ##############################
+server:
+  # 協定類型（http, https, h2, socket）
+  protocol: "http"
+
+  # 允許的最小 TLS 版本，空值表示使用 TLS1.2
+  min_tls_version: ""
+
+  # 綁定的 IP 位址，空值表示綁定所有網路介面
+  http_addr: ""
+
+  # HTTP 伺服器監聽埠號
+  port: 8080
+
+  # 公開存取的網域名稱
+  domain: "localhost"
+
+  # 是否強制重新導向到正確的網域（防止 DNS 劫持攻擊）
+  enforce_domain: false
+
+  # 完整的公開存取 URL
+  root_url: "%(protocol)s://%(domain)s:%(port)s/"
+
+  # 是否從子路徑提供 DetectViz 服務
+  serve_from_sub_path: false
+
+  # 是否記錄 Web 請求
+  router_logging: false
+
+  # 靜態資源根路徑
+  static_root_path: "public"
+
+  # 是否啟用 gzip 壓縮
+  enable_gzip: true
+
+  # HTTPS 憑證文件
+  cert_file: ""
+  cert_key: ""
+  cert_pass: ""
+
+  # 憑證檔案監控間隔
+  certs_watch_interval: ""
+
+  # CDN URL
+  cdn_url: ""
+
+  # 讀取請求超時時間（分鐘）
+  read_timeout: 0
+
+# 自訂 HTTP 回應標頭
+server_custom_response_headers: {}
+
+#################################### 環境設定 ################################
+environment:
+  # 是否允許使用本地檔案系統
+  local_file_system_available: true
+
+#################################### gRPC 伺服器 #############################
+grpc_server:
+  network: "tcp"
+  address: "127.0.0.1:10000"
+  use_tls: false
+  enable_logging: false
+
+#################################### 資料庫 ##################################
+store:
+  # 資料庫類型：mysql, postgres, sqlite3
+  type: "sqlite3"
+  # 資料庫主機位址
+  host: "127.0.0.1:3306"
+  # 資料庫名稱
+  name: "detectviz"
+  # 資料庫使用者名稱
+  user: "root"
+  # 資料庫密碼（如包含 # 或 ; 需用三重引號包圍）
+  password: ""
+  # 連接字串 URL（可替代上述個別設定）
+  url: ""
+  # 是否啟用高可用性模式
+  high_availability: true
+  # 最大閒置連接數
+  max_idle_conn: 2
+  # 最大開啟連接數
+  max_open_conn: ""
+  # 連接最大生存時間（秒）
+  conn_max_lifetime: 14400
+  # 是否記錄 SQL 查詢
+  log_queries: false
+  # SSL 模式設定
+  ssl_mode: "disable"
+  ssl_sni: ""
+  # 交易隔離等級
+  isolation_level: ""
+  # SSL 憑證路徑
+  ca_cert_path: ""
+  client_key_path: ""
+  client_cert_path: ""
+  server_cert_name: ""
+  # SQLite3 資料庫檔案路徑
+  path: "detectviz.db"
+  # SQLite3 快取模式
+  cache_mode: "private"
+  # SQLite3 WAL 模式
+  wal: false
+  # 資料庫遷移鎖定
+  migration_locking: true
+  # 鎖定嘗試超時時間（秒）
+  locking_attempt_timeout_sec: 0
+  # SQLite 查詢重試次數
+  query_retries: 0
+  # SQLite 交易重試次數
+  transaction_retries: 5
+  # 是否啟用資料庫查詢指標和追蹤
+  instrument_queries: false
+
+#################################### 快取伺服器 ##############################
+cache: # DetectViz 快取模組
+  backend: "redis"
+  redis:
+    address: "localhost:6379"
+    db: 0
+
+remote_cache:
+  # 快取類型：redis, memcached, database
+  type: "database"
+  # 快取連接字串
+  connstr: ""
+  # 快取鍵前綴
+  prefix: ""
+  # 是否加密快取值
+  encryption: ""
+
+#################################### Session 設定 ################################
+session:
+  provider: "memory" # zh: Session 提供者，可為 memory, redis 等
+  cookie_name: "sess_id" # zh: 登入後 session cookie 名稱
+  gc_interval: "30m" # zh: 清除過期 session 的時間間隔
+
+#################################### Email 設定 ##################################
+email:
+  enabled: false # zh: 是否啟用 SMTP 發送功能
+  smtp_host: "localhost" # zh: SMTP 主機位址
+  smtp_port: 25 # zh: SMTP 埠號
+  from_address: "detectviz@example.com" # zh: 預設寄件者 Email
+
+#################################### 代理設定 ####################################
+proxy:
+  core:
+    send_user_header: true # zh: 是否傳送使用者標頭至後端服務
+    cookie_secure: true # zh: 是否強制 secure cookie
+    trusted_hosts:
+      - "127.0.0.1"
+      - "localhost"
+  datasource:
+    # 從 dataproxy 移植
+    max_conns: 10 # zh: 資料來源最大連線數
+    row_limit: 1000000 # zh: 單次查詢行數上限
+    user_agent: "detectviz" # zh: 自訂 User-Agent
+    timeout: 30 # zh: 讀取回應標頭超時時間（秒）
+    dial_timeout: 10 # zh: 建立 TCP 連接超時時間（秒）
+    keep_alive_seconds: 30 # zh: keepalive 請求間隔（秒）
+    response_limit: 0 # zh: 回應大小限制（位元組）
+    logging: false # zh: 是否啟用資料代理日誌記錄
+
+#################################### 分析統計 ################################
+analytics:
+  # 是否啟用使用統計回報
+  reporting_enabled: true
+  # 發行商名稱
+  reporting_distributor: "detectviz-labs"
+  # 是否檢查新版本
+  check_for_updates: true
+  # 是否檢查外掛更新
+  check_for_plugin_updates: true
+  # 是否啟用意見回饋連結
+  feedback_links_enabled: true
+
+#################################### 安全性 ##################################
+security:
+  # 是否禁用初始管理員建立
+  disable_initial_admin_creation: false
+  # 預設管理員使用者名稱
+  admin_user: "admin"
+  # 預設管理員密碼
+  admin_password: "admin"
+  # 預設管理員信箱
+  admin_email: "admin@localhost"
+  # 簽名金鑰
+  secret_key: "SW2YcwTIb9zpOOhoPsMm"
+  # 加密提供者
+  encryption_provider: "secretKey.v1"
+  # 可用加密提供者清單
+  available_encryption_providers: ""
+  # 是否禁用 Gravatar 頭像
+  disable_gravatar: false
+  # 資料來源代理白名單
+  data_source_proxy_whitelist: ""
+  # 是否禁用暴力破解登入保護
+  disable_brute_force_login_protection: false
+  # 暴力破解保護最大嘗試次數
+  brute_force_login_protection_max_attempts: 5
+  # 是否禁用 IP 位址登入保護
+  disable_ip_address_login_protection: true
+  # Cookie 安全屬性
+  cookie_secure: false
+  # Cookie SameSite 屬性
+  cookie_samesite: "lax"
+  # 是否允許嵌入
+  allow_embedding: false
+
+  # X-Content-Type-Options 標頭
+  x_content_type_options: true
+  # X-XSS-Protection 標頭
+  x_xss_protection: true
+
+# 加密設定
+security_encryption:
+  # 資料加密金鑰快取 TTL
+  data_keys_cache_ttl: "15m"
+  # 快取清理間隔
+  data_keys_cache_cleanup_interval: "1m"
+
+#################################### 快照功能 ################################
+snapshots:
+  # 是否啟用快照功能
+  enabled: true
+  # 外部快照分享
+  external_enabled: true
+  external_snapshot_url: "https://snapshots.raintank.io"
+  external_snapshot_name: "Publish to snapshots.raintank.io"
+  # 公開模式
+  public_mode: false
+
+#################################### 使用者管理 ##############################
+users:
+  # 是否允許使用者註冊
+  allow_sign_up: false
+  # 是否允許非管理員建立組織
+  allow_org_create: false
+  # 是否自動分配新使用者到預設組織
+  auto_assign_org: true
+  # 自動分配的組織 ID
+  auto_assign_org_id: 1
+  # 新使用者預設角色
+  auto_assign_org_role: "Viewer"
+  # 是否需要信箱驗證
+  verify_email_enabled: false
+  # 登入後重新導向的組織 ID
+  login_default_org_id: ""
+  # 登入頁面提示文字
+  login_hint: ""
+  password_hint: ""
+  # 預設 UI 主題
+  default_theme: "dark"
+  # 預設 UI 語言
+  default_language: "zh-TW"
+  # 自訂首頁路徑
+  home_page: ""
+  # 邀請連結有效期限
+  user_invite_max_lifetime_duration: "24h"
+  # 驗證信箱有效期限
+  verification_email_max_lifetime_duration: "1h"
+  # 最後上線時間更新頻率
+  last_seen_update_interval: "15m"
+
+#################################### 密鑰掃描 ################################
+secretscan:
+  # 是否啟用密鑰掃描功能
+  enabled: false
+  # 檢查間隔
+  interval: "5m"
+  # 掃描服務基礎 URL
+  base_url: "https://secret-scanning.grafana.net"
+  # Webhook URL
+  oncall_url: ""
+  # 是否在檢測到洩漏時撤銷令牌
+  revoke: true
+
+#################################### 服務帳號 ################################
+service_accounts:
+  # 令牌過期日期限制
+  token_expiration_day_limit: ""
+
+#################################### 身份驗證 ################################
+auth:
+  # 登入 Cookie 名稱
+  login_cookie_name: "detectviz_session"
+  # 是否禁用內建登入
+  disable_login: false
+  # 最大非活躍時間
+  login_maximum_inactive_lifetime_duration: ""
+  # 最大登入時間
+  login_maximum_lifetime_duration: ""
+  # 令牌輪換間隔（分鐘）
+  token_rotation_interval_minutes: 10
+  # 是否隱藏登入表單
+  disable_login_form: false
+  # 是否隱藏登出選單
+  disable_signout_menu: false
+  # 登出重新導向 URL
+  signout_redirect_url: ""
+  # OAuth 自動登入
+  oauth_auto_login: false
+  # OAuth 狀態 Cookie 最大存活時間
+  oauth_state_cookie_max_age: 600
+  # OAuth 錯誤訊息
+  oauth_login_error_message: "oauth.login.error"
+  # OAuth 刷新令牌伺服器鎖定最小等待時間
+  oauth_refresh_token_server_lock_min_wait_ms: 1000
+  # API 金鑰最大存活時間
+  api_key_max_seconds_to_live: -1
+  # OAuth 不安全信箱查找
+  oauth_allow_insecure_email_lookup: false
+  # 身份回應標頭
+  id_response_header_enabled: false
+  id_response_header_prefix: "X-DetectViz"
+  id_response_header_namespaces: "user api-key service-account"
+  # DetectViz 認證設定
+  enabled: true # 是否啟用認證模組
+  type: "keycloak" # 認證策略類型，如 basic、keycloak 等
+
+# 免密碼驗證
+auth_passwordless:
+  enabled: false
+  code_expiration: "20m"
+
+# SSO 設定
+sso_settings:
+  reload_interval: "1m"
+  configurable_providers: "github gitlab google generic_oauth azuread okta"
+
+# 匿名驗證
+auth_anonymous:
+  enabled: false
+  org_name: "Main Org."
+  org_role: "Viewer"
+  hide_version: false
+  device_limit: ""
+
+#################################### 認證供應者統一配置 ###########################
+auth_providers:
+  - type: "basic"
+    enabled: true
+  - type: "ldap"
+    enabled: false
+  - type: "jwt"
+    enabled: false
+
+#################################### 配額管理 ################################
+quota:
+  enabled: true
+  # 組織配額
+  org_user: 10
+  org_dashboard: 100
+  org_data_source: 10
+  org_api_key: 10
+  org_alert_rule: 100
+  # 使用者配額
+  user_org: 10
+  # 全域配額
+  global_user: -1
+  global_org: -1
+  global_dashboard: -1
+  global_api_key: -1
+  global_session: -1
+  global_alert_rule: -1
+  global_file: 1000
+  global_correlations: -1
+  # 告警規則配額
+  alerting_rule_group_rules: 100
+  alerting_rule_evaluation_results: -1
+  # DetectViz 配額設定
+  limits:
+    alert.rules: 500
+    dashboards: 200
+
+#################################### 統一告警 ################################
+unified_alerting:
+  enabled: true
+  disabled_orgs: ""
+  initialization_timeout: "30s"
+  admin_config_poll_interval: "60s"
+  alertmanager_config_poll_interval: "60s"
+  # 更多告警設定...
+
+#################################### 個人檔案 ################################
+profile:
+  enabled: true
+
+#################################### 查詢設定 ################################
+query:
+  concurrent_query_limit: ""
+
+#################################### 查詢歷史 ################################
+query_history:
+  enabled: true
+
+#################################### 指標統計 ################################
+metrics:
+  enabled: true
+  interval_seconds: 10
+  disable_total_stats: false
+  total_stats_collector_interval_seconds: 1800
+  default_source: "prometheus"
+
+# 指標環境資訊
+metrics_environment_info: {}
+
+#################################### 外掛程式 ################################
+plugins:
+  enable_alpha: false
+  app_tls_skip_verify_insecure: false
+  allow_loading_unsigned_plugins: ""
+  plugin_admin_enabled: true
+  plugin_admin_external_manage_enabled: false
+  plugin_catalog_url: "https://grafana.com/grafana/plugins/"
+  plugin_catalog_hidden_plugins: ""
+  log_backend_requests: false
+  public_key_retrieval_disabled: false
+  public_key_retrieval_on_startup: false
+  disable_plugins: ""
+  hide_angular_deprecation: ""
+  forward_host_env_vars: ""
+  preinstall: ""
+  preinstall_sync: ""
+  preinstall_disabled: false
+  update_strategy: "minor"
+
+#################################### 外掛程式設定整合 ##############################
+plugin:
+  forward_env: true # 是否將主機環境變數傳遞給 plugin（如 proxy）
+  runtime:
+    path: "./plugins"
+    auto: true
+
+#################################### 即時功能 ################################
+live:
+  max_connections: 100
+  message_size_limit: 65536
+  allowed_origins: ""
+
+#################################### 企業版功能 ##############################
+enterprise:
+  license_path: ""
+
+#################################### 功能開關 ################################
+feature_toggles:
+  enable: ""
+
+# DetectViz 功能開關
+feature:
+  flags:
+    rule_editor: true
+    rbac_ui: false
+
+#################################### 日期格式 ################################
+date_formats:
+  full_date: "YYYY-MM-DD HH:mm:ss"
+  interval_second: "HH:mm:ss"
+  interval_minute: "HH:mm"
+  interval_hour: "MM/DD HH:mm"
+  interval_day: "MM/DD"
+  interval_month: "YYYY-MM"
+  interval_year: "YYYY"
+  use_browser_locale: false
+  default_timezone: "Asia/Taipei"
+
+#################################### 支援包 ##################################
+support_bundles:
+  enabled: true
+  server_admin_only: true
+  public_keys: ""
+
+#################################### 儲存設定 ################################
+storage:
+  allow_unsanitized_svg_upload: false
+
+#################################### 搜尋功能 ################################
+search:
+  dashboard_loading_batch_size: 200
+  full_reindex_interval: "5m"
+  index_update_interval: "10s"
+
+#################################### 導航設定 ################################
+navigation_app_sections: {}
+navigation_app_standalone_pages: {}
+
+#################################### 功能管理 ################################
+feature_management:
+  allow_editing: false
+
+#################################### DetectViz 特有設定 #####################
+
+# 日誌模組
+logger:
+  level: "info" # 日誌等級：debug, info, warn, error, critical
+  format: "json" # 日誌格式：text, console, json
+  outputs:
+    - "stdout"
+
+# 通知模組
+notifier:
+  type: "webhook" # 通知類型
+  target: "https://hooks.example.com/alert" # 通知目標
+
+# 排程器設定
+scheduler:
+  timezone: "Asia/Taipei" # 時區設定
+
+# 告警設定
+alert:
+  levels: ["critical", "warning"] # 告警等級
+
+# 訊息匯流排
+bus:
+  backend: "memory" # 訊息後端類型
+
+# 加密設定
+encryption:
+  algorithm: "aes256" # 加密演算法
+  key_rotation_days: 30 # 金鑰輪換週期（天）
+
+# Web 介面設定
+web:
+  static_path: "./public" # 靜態資源路徑
+  enable_ui: true # 是否啟用 Web UI
+
+# 基礎架構設定
+infra:
+  enable_retry: true # 是否啟用重試機制
+  max_retries: 3 # 最大重試次數
+
+# 驗證設定
+validation:
+  enabled: true # 是否啟用驗證
+  strict: false # 是否啟用嚴格驗證
+
+# 角色權限控制
+rbac:
+  enabled: true # 是否啟用 RBAC
+  default_policy: "read-only" # 預設政策
+
+# 中介軟體設定
+middleware:
+  cors: true # 是否啟用 CORS
+  rate_limit: 100 # 速率限制
+
+# 服務設定
+services:
+  quota_enabled: true # 是否啟用配額
+
+# 系統診斷
+system:
+  diagnostics_enabled: true # 是否啟用系統診斷
+
+# 模組設定
+modules:
+  enabled:
+    rule: true
+    logger: true
+    metrics: true
+    notifier: true
+
+# 規則引擎
+rule:
+  enabled: true
+  default_types: ["threshold", "anomaly"]
+
+# 資料來源
+datasource:
+  enabled: true
+  types: ["influxdb", "prometheus"]
+
+# 密鑰管理
+secrets:
+  provider: "vault" # 密鑰提供者
+  endpoint: "http://localhost:8200" # 密鑰服務端點
+  token: "my-root-token" # 存取令牌
+

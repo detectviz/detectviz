@@ -206,15 +206,14 @@ detectviz/
 │   │   └── runner.go
 │   └── test/                 # 整合測試、fakes、mocks、testutil 工具
 │
-├── pkg/                      # 共用抽象（interface、config、domain）            
-│   ├── ifaces/               # 模組抽象介面定義
+├── pkg/                      # 共用抽象（interface、config）            
 │   ├── config/								# 設定載入與注入模組
 │   │   ├── default.go
 │   │   └── README.md
 │   ├── configtypes/
 │   │   ├── cache_config.go
 │   │   └── notifier_config.go
-│   ├── ifaces
+│   ├── ifaces/               # 模組抽象介面定義
 │   │   ├── alert/
 │   │   │   ├── evaluate_test.go
 │   │   │   ├── evaluate.go
@@ -314,6 +313,29 @@ detectviz/
 - 各 app 的 API route 將由各模組自行註冊並統一導入 router
 - API 路由與模組 API 採用 plugin 式注入
 
+---
+
+## 已實作模組
+
+- **Logger**：支援 Zap 實作與 NopLogger。
+- **ConfigProvider**：統一提供全域設定注入。
+- **EventBus**：可註冊多種事件處理器（Host, Metric, Alert, Task）。
+- **AlertEvaluator**：支援 Prometheus、Flux 查詢條件擴充。
+- **Scheduler**：支援 Cron 與 WorkerPool 型任務排程。
+- **Notifier**：支援 Email、Slack、Webhook 多種通道。
+
+## 尚未實作的模組（但已設計初版）
+
+- `internal/web/`：負責 HTMX Web 組件、模板與畫面渲染
+- `internal/store/`：提供統一 CRUD 接口，可由 plugin datasource backend 注入實作
+- `internal/plugins/datasources/`：各種資料來源實作（influxdb, loki, file 等）
+- `internal/services/`：封裝業務邏輯，不直接操作 handler 或 adapter
+- `pkg/infra/metrics/`：Prometheus exporter 模組
+- `pkg/infra/tracing/`：OpenTelemetry 追蹤邏輯
+- `pkg/infra/httpclient/`：統一 http 呼叫邏輯與 middleware
+- `pkg/security/encryption/`：AES 封裝與 provider 模組
+- `pkg/utils/`：各類通用函式（pointer, string, retryer, uri 等）
+
 ### 未實作:
 apps/alert-app
 internal/middleware
@@ -331,16 +353,7 @@ pkg/utils/*
 plugins/*
 internal/web
 
----
 
-## 已實作模組
-
-- **Logger**：支援 Zap 實作與 NopLogger。
-- **ConfigProvider**：統一提供全域設定注入。
-- **EventBus**：可註冊多種事件處理器（Host, Metric, Alert, Task）。
-- **AlertEvaluator**：支援 Prometheus、Flux 查詢條件擴充。
-- **Scheduler**：支援 Cron 與 WorkerPool 型任務排程。
-- **Notifier**：支援 Email、Slack、Webhook 多種通道。
 
 ---
 
@@ -367,139 +380,4 @@ make run-scheduler
 
 ---
 
-# 新增文件：docs/module-architecture-overview.md
 
-# Detectviz 模組化設計概覽
-
-本文件整理各個核心模組的設計邏輯、預期責任分工與 plugin 注入方式，為尚未完成的模組提供全局規劃依據。
-
-## 目前尚未實作的模組（但已設計初版）
-
-- `internal/web/`：負責 HTMX Web 組件、模板與畫面渲染
-- `internal/store/`：提供統一 CRUD 接口，可由 plugin datasource backend 注入實作
-- `internal/plugins/datasources/`：各種資料來源實作（influxdb, loki, file 等）
-- `internal/services/`：封裝業務邏輯，不直接操作 handler 或 adapter
-- `pkg/infra/metrics/`：Prometheus exporter 模組
-- `pkg/infra/tracing/`：OpenTelemetry 追蹤邏輯
-- `pkg/infra/httpclient/`：統一 http 呼叫邏輯與 middleware
-- `pkg/security/encryption/`：AES 封裝與 provider 模組
-- `pkg/utils/`：各類通用函式（pointer, string, retryer, uri 等）
-
----
-
-# 新增文件：docs/interfaces/web.md
-
-# Web 模組設計
-
-## 目的
-
-提供 UI 組件、模板 layout、HTMX partial rendering 支援
-
-## 預期結構
-
-- layout/: 提供 base layout 與渲染模板
-- pages/: 每個模組對應一組 html 頁面
-- components/: 可重用元件
-- bind/: 封裝表單綁定與驗證
-- render/: 提供 template 引擎註冊點
-
-## Plugin 化
-
-Web 可提供注入頁面區塊與 partial hook，但以目前設計為靜態載入優先。
-
----
-
-# 新增文件：docs/interfaces/store.md
-
-# Store 模組設計
-
-## 目的
-
-提供高階 CRUD 操作介面，封裝資料資源存取邏輯。
-
-## Plugin 化實作
-
-各資料來源實作放置於 `plugins/datasources/`，可由 bootstrap 或 registry 註冊。
-
-## Interface
-
-```go
-type AlertStore interface {
-  Create(ctx, obj)
-  Update(ctx, obj)
-  Delete(ctx, id)
-  FindByID(ctx, id)
-}
-```
-
----
-
-# 新增文件：docs/interfaces/infra.md
-
-# Infra 模組群設計（pkg/infra）
-
-## 模組群
-
-- `metrics/`：Prometheus 指標導出
-- `tracing/`：OTel 追蹤封裝
-- `httpclient/`：統一 http 呼叫與 middleware 支援
-- `lock/`：ServerLock 實作
-- `usagestats/`：使用率收集
-
-## 對外由 DI 容器注入
-
----
-
-# 新增文件：docs/interfaces/utils.md
-
-# Utils 工具模組設計
-
-## 子模組分類建議
-
-- `stringutil.go`
-- `jsonutil.go`
-- `netutil.go`
-- `contextutil.go`
-- `retryer.go`
-- `pointer.go`
-
-## 特性
-
-- 不相依外部系統
-- 可用於測試、middleware、registry 初始化等多處情境
-
----
-
-# 新增文件：docs/interfaces/encryption.md
-
-# Security - Encryption 模組設計
-
-## 模組目的
-
-提供 AES 加密/解密支援，使用 provider/service 架構分離實作與策略。
-
-## Interface 範例
-
-```go
-type Encryptor interface {
-  Encrypt([]byte) ([]byte, error)
-  Decrypt([]byte) ([]byte, error)
-}
-```
-
-## plugin 註冊點
-
-註冊於 bootstrap 或 DI 管理器中
-
----
-
-# 新增文件：todo.md
-
-- [ ] `internal/web/` 起手骨架與頁面引擎註冊點
-- [ ] `internal/store/` 定義 CRUD 接口與 resolver
-- [ ] `plugins/datasources/influxdb/` 建立 alert store 實作
-- [ ] `pkg/infra/metrics/` Prometheus exporter 注入模組
-- [ ] `pkg/infra/tracing/` Otel exporter 建立與測試
-- [ ] `pkg/infra/httpclient/` client + middleware 整合
-- [ ] `pkg/security/encryption/` AES provider 與加解密測試
-- [ ] `pkg/utils/` 各類工具函式彙整與導入

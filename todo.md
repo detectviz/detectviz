@@ -1,90 +1,33 @@
 # TODO 待補實作與修正項目清單（來自 detectviz-source-code.md 分析）
 
-## 1. plugins/ 模組 Config 定義
-
-- [ ] plugins/metric/flux/config.go：定義 Flux Plugin 設定結構與預設值。需設計 Flux 插件的設定 struct，並提供預設參數與驗證。
-- [ ] plugins/metric/prom/config.go：定義 Prom Plugin 查詢參數。需實作 Prometheus 插件查詢設定 struct 與驗證邏輯。
-- [ ] plugins/notifier/email/config.go：定義 Email 通知格式與驗證。需設計 email 通知的設定格式並驗證輸入。
-- [ ] plugins/notifier/slack/config.go：Slack webhook 與格式設定。需設計 Slack webhook 設定 struct，支援訊息格式定義。
-- [ ] plugins/notifier/webhook/config.go：Generic webhook 自定義結構。需設計通用 webhook 設定格式，支援自定義 header、body 等。
-- [ ] docs/interfaces/plugin_config.md：各類 plugin config 結構與驗證方式說明。補充 flux/prom/email/slack/webhook 等格式範例與驗證邏輯。
-
-## 2. 整合測試場景
-
-#### plugin-importer-versioning 整合流程
-- [ ] internal/test/integration/full_import_flow_test.go：
-  - 模擬 plugin 掛載後註冊 importer
-  - 模擬匯入 JSON/YAML → 轉換成 Element → 寫入 registry
-  - 寫入 version store 並驗證版本記錄存在
-
-#### bootstrap-wire 啟動流程
-- [ ] internal/test/integration/bootstrap_test.go：
-  - 測試完整 Init → BuildServer → Run 是否可完成啟動
-  - 使用 fake_component 注入並驗證模組運作順序與日誌
-
-
-## 3. /internal/adapters 與對應 interface 模組缺漏項目補充
-interface: pkg/ifaces/{module}/*
-adapter: internal/adapters/{module}/*
-
-- [x] internal/adapters/eventbus/metric.go 測試缺失，需補對應 adapter 測試。
-- [x] internal/adapters/logger/zap_adapter.go 未補對應單元測試。
-- [x] internal/test/fakes/fake_logger.go 尚未建立，用於測試注入與日誌檢查。
-- [x] internal/test/fakes/fake_notifier.go 尚未建立，用於測試多 notifier 整合。
-- [x] internal/adapters/notifier/email_adapter_test.go 尚未補單元測試。
-- [x] internal/adapters/eventbus/host.go 測試缺失，需補對應 adapter 測試。
-- [x] internal/adapters/eventbus/task.go 測試缺失，需補對應 adapter 測試。
-- [x] internal/adapters/eventbus/alert.go 測試缺失，需補 alert handler 對應事件處理測試。
-- [x] internal/test/fakes/fake_eventbus.go 尚未建立，供 plugin 匯入測試使用。
-- [x] internal/adapters/notifier/slack_adapter.go 未補單元測試。
-- [x] internal/adapters/notifier/webhook_adapter.go 未補單元測試。
-- [x] internal/adapters/logger/nop_adapter.go 未補單元測試。
- 
-## 4. 測試與樣板補齊
-- [ ] pkg/ifaces/test/test.go：模組與插件測試 interface。可定義模組驗證器、模擬元件等輔助介面，簡化測試撰寫。
-- [ ] internal/adapters/eventbus/alert.go 測試案例尚未建立。需設計單元測試覆蓋 alert eventbus handler 的各種情境。
-- [ ] internal/plugins/eventbus/* 所有插件 handler 測試缺失。需針對 eventbus plugins 撰寫 handler測試案例。
-- [ ] internal/test/plugins/：應建立 plugin 驗證測試樣板。需提供範例與基礎測試樣板，便於插件開發者驗證功能。
-- [ ] pkg/ifaces/event/... 應補 mock 與泛用事件 payload 檢驗。需設計 mock event bus 與事件 payload 驗證工具。
-- [ ] internal/test/testutil/assert_logger.go 功能可再擴充（包含結構化 log 比對）。需擴充 logger 測試工具，支援結構化日誌內容比對。
-- [ ] docs/interfaces/test.md：測試樣板介面與模組說明文件。補充模組測試介面、mock 建立與 handler 驗證策略。
-- [ ] internal/test/fakes/fake_server.go：提供 Server interface 假實作，用於測試注入與驗證呼叫。
-- [ ] internal/test/server/server_test.go：測試 Server Run/Shutdown 邏輯與模組注入整合，驗證是否能正常啟動 HTTP 與模組流程。
-- [x] internal/test/fakes/fake_config.go：提供 ConfigProvider 假實作，支援測試注入與設定模擬。
-
-
-## 5. internal/web 模組初始實作項目
+## 1. internal/api 路由與統一回應格式實作
 
 參考文件：
-- [docs/interfaces/web.md](../docs/interfaces/web.md)
-- [docs/web-architecture.md](../docs/web-architecture.md)
+- [docs/interfaces/api.md](./docs/interfaces/api.md)
+- [docs/api-architecture.md](./docs/api-architecture.md)
 
-### 基礎組件
+### 起手實作項目
 
-- [ ] internal/web/router.go：註冊 web 頁面路由（ex: `/web/alerts/status`）
-- [ ] internal/web/context.go：包裝 echo.Context，注入 UserInfo、權限資訊
-- [ ] internal/web/render/layout.go：提供 base layout 與 block 標記渲染邏輯
-- [ ] internal/web/render/renderer.go：整合 Echo template 引擎註冊與初始化
-- [ ] internal/web/binding.go：封裝 HTML 表單綁定與驗證邏輯
-- [ ] internal/web/response.go：定義 `RenderPage`, `RenderPartial`, `ErrorJSON` 回傳格式
-- [ ] internal/web/navtree/navtree.go：定義導覽列結構與模組節點註冊邏輯
-- [ ] internal/web/pages/alert_status.html：HTMX table partial 渲染頁面（對應 alert 模組）
-- [ ] internal/web/partials/sidebar.html：共用 sidebar layout 區塊
-- [ ] internal/web/partials/table.html：可複用表格區塊（搭配 tabulator）
-- [ ] internal/web/static/htmx.min.js：HTMX 前端互動元件（嵌入或引入 CDN）
-- [ ] internal/web/static/tabulator.min.js：表格元件 JS（可採本地或 CDN）
-- [ ] internal/web/static/style.css：基礎樣式表
+- [ ] internal/api/router.go：初始化 Echo，註冊 API 路由分組，掛載各模組 handler。
+- [ ] internal/api/middleware.go：集中註冊 middleware 鏈（auth, logger, tracing, metrics 等）。
+- [ ] internal/api/response.go：統一 JSON 回應與錯誤格式封裝方法。
+- [ ] internal/api/errors/api_error.go：定義 API 專用錯誤型別與錯誤碼。
+- [ ] internal/api/dtos/alert.go：定義 alert 模組用於 API 的 request/response DTO 結構。
+- [ ] internal/api/dtos/rule.go：定義 rule 模組 DTO 結構。
+- [ ] internal/api/dtos/notifier.go：定義 notifier 模組 DTO 結構。
 
-### 未來擴充點
+### 測試與擴充
 
-- [ ] plugins/web/navtree.go：支援 plugin 模組註冊 navtree 節點
-- [ ] plugins/web/pages/*.html：plugin 模組自定頁面擴充
+- [ ] internal/test/api/router_test.go：驗證 API router 註冊是否正確，涵蓋版本、路徑。
+- [ ] internal/test/api/response_test.go：驗證回應格式是否一致，錯誤碼是否正常包裝。
+- [ ] internal/test/api/dto_validation_test.go：測試 DTO binding 與 validator 整合行為。
+- [ ] plugins/api/metrics.go：提供 plugin 擴充 API handler 範例（如 `/api/plugins/{mod}/metrics`）。
 
-## 6. internal/middleware 模組實作項目
+## 2. internal/middleware 掛載中介層、日誌、追蹤等
 
 參考文件：
-- [docs/interfaces/middleware.md](../docs/interfaces/middleware.md)
-- [docs/middleware-architecture.md](../docs/middleware-architecture.md)
+- [docs/interfaces/middleware.md](./docs/interfaces/middleware.md)
+- [docs/middleware-architecture.md](./docs/middleware-architecture.md)
 
 ### 核心中介層
 
@@ -105,17 +48,64 @@ adapter: internal/adapters/{module}/*
 - [ ] plugins/middleware/cors.go：plugin 註冊 CORS middleware（範例）
 - [ ] plugins/middleware/ratelimit.go：plugin 註冊限速 middleware（範例）
 
-## 7. internal/handlers 模組實作項目
+
+## 3. plugins/ 模組 Config 擴充設定標準化
+
+- [ ] plugins/metric/flux/config.go：定義 Flux Plugin 設定結構與預設值。需設計 Flux 插件的設定 struct，並提供預設參數與驗證。
+- [ ] plugins/metric/prom/config.go：定義 Prom Plugin 查詢參數。需實作 Prometheus 插件查詢設定 struct 與驗證邏輯。
+- [ ] plugins/notifier/email/config.go：定義 Email 通知格式與驗證。需設計 email 通知的設定格式並驗證輸入。
+- [ ] plugins/notifier/slack/config.go：Slack webhook 與格式設定。需設計 Slack webhook 設定 struct，支援訊息格式定義。
+- [ ] plugins/notifier/webhook/config.go：Generic webhook 自定義結構。需設計通用 webhook 設定格式，支援自定義 header、body 等。
+- [ ] docs/interfaces/plugin_config.md：各類 plugin config 結構與驗證方式說明。補充 flux/prom/email/slack/webhook 等格式範例與驗證邏輯。
+
+## 4. internal/plugins lifecycle 控制與註冊
 
 參考文件：
-- [docs/interfaces/handlers.md](../docs/interfaces/handlers.md)
-- [docs/handlers-architecture.md](../docs/handlers-architecture.md)
+- [docs/architecture/plugins.md](./docs/architecture/plugins.md)
+- [docs/interfaces/plugins.md](./docs/interfaces/plugins.md)
+
+### Plugin 管理模組
+
+- [x] internal/plugins/manager/lifecycle.go：控制 plugin 啟動與關閉流程（已實作）
+- [x] internal/plugins/manager/loader.go：載入 plugins 之邏輯（已實作）
+- [x] internal/plugins/manager/process.go：執行 Init/Close 流程控制（已實作）
+- [x] internal/plugins/manager/registry.go：註冊並掛載 plugins（已實作）
+
+### Plugin 註冊點與類型擴充
+
+- [ ] internal/plugins/plugins/auth/keycloak/keycloak.go：實作 Keycloak 認證策略註冊範例
+- [ ] internal/plugins/plugins/middleware/cors/cors.go：註冊 CORS MiddlewarePlugin
+- [ ] internal/plugins/plugins/middleware/ratelimit/ratelimit.go：註冊 RateLimit MiddlewarePlugin
+- [ ] internal/plugins/plugins/apihooks/alerts/alert_status.go：自訂 API route 插件範例
+- [ ] internal/plugins/plugins/eventbus/alertlog/handler.go：事件擴充處理器
+
+### Plugin 測試與驗證
+
+- [ ] internal/test/plugins/plugin_lifecycle_test.go：測試註冊、啟動、關閉 plugin 的全流程
+- [ ] internal/test/plugins/plugin_registry_test.go：驗證 plugin 註冊與反註冊的行為一致性
+- [ ] internal/test/plugins/fake_plugins.go：定義 fake plugin 實作供測試注入與模擬
+- [ ] internal/test/plugins/fake_context.go：模擬 plugin 執行上下文，驗證 Init/Close 行為
+- [ ] internal/test/plugins/plugin_integration_test.go：驗證 plugin 註冊後與核心模組整合情境（ex: middleware 呼叫順序）
+
+### 擴充建議
+
+- [ ] 支援 plugins/ 目錄自動掃描與 lazy loading
+- [ ] plugins 支援版本號與 metadata（如 name, description）
+- [ ] CLI 工具自動產生 plugin scaffold（未來 roadmap）
+
+
+
+## 5. internal/handlers 各模組 API 進入點實作
+
+參考文件：
+- [docs/interfaces/handlers.md](./docs/interfaces/handlers.md)
+- [docs/handlers-architecture.md](./docs/handlers-architecture.md)
 
 ### 建立範本結構與核心組件
 
 - [ ] internal/handlers/alert/v0alpha1/alert_handler.go：定義 Alert 模組 API handler，支援 GET /api/v0alpha1/alert/status。
 - [ ] internal/handlers/rule/v0alpha1/rule_handler.go：定義 Rule 模組 API handler，支援基本 CRUD。
-- [ ] internal/handlers/report/v0alpha1/report_handler.go：定義 Report 模組 handler。
+- [ ] internal/handlers/notifier/v0alpha1/notifier_handler.go：定義 Notifier 模組 handler。
 - [ ] internal/handlers/common/response.go：定義 JSON success/error 包裝器。
 - [ ] internal/handlers/common/errors.go：定義標準錯誤常數與結構。
 
@@ -126,34 +116,49 @@ adapter: internal/adapters/{module}/*
 - [ ] internal/test/handlers/response_test.go：測試回應包裝行為。
 - [ ] plugins/handlers/：提供 plugin handler 註冊範例，對應 plugin lifecycle。
 
-## 8. internal/api 模組實作項目
+
+
+## 6. internal/services 業務邏輯核心
 
 參考文件：
-- [docs/interfaces/api.md](../docs/interfaces/api.md)
-- [docs/api-architecture.md](../docs/api-architecture.md)
+- [docs/interfaces/services.md](./docs/interfaces/services.md)
+- [docs/architecture/services.md](./docs/architecture/services.md)
 
-### 起手實作項目
+### Service interface 與實作項目
 
-- [ ] internal/api/router.go：初始化 Echo，註冊 API 路由分組，掛載各模組 handler。
-- [ ] internal/api/middleware.go：集中註冊 middleware 鏈（auth, logger, tracing, metrics 等）。
-- [ ] internal/api/response.go：統一 JSON 回應與錯誤格式封裝方法。
-- [ ] internal/api/errors/api_error.go：定義 API 專用錯誤型別與錯誤碼。
-- [ ] internal/api/dtos/alert.go：定義 alert 模組用於 API 的 request/response DTO 結構。
-- [ ] internal/api/dtos/rule.go：定義 rule 模組 DTO 結構。
-- [ ] internal/api/dtos/report.go：定義 report 模組 DTO 結構。
+- [ ] internal/services/interfaces.go：集中定義跨模組的 service 介面
+- [ ] internal/services/rule/service.go：實作 RuleService，整合 rule store 與 notifier
+- [ ] internal/services/notifier/service.go：實作 NotifierService，支援通知發送、註冊與篩選
+- [ ] internal/services/logger/service.go：實作 LoggerService，支援結構化日誌寫入與查詢
+- [ ] internal/services/metrics/service.go：實作 MetricsService，支援時序資料寫入與查詢
+- [ ] internal/services/eventbus/service.go：實作 EventBusService，支援事件發送與訂閱觸發
 
-### 測試與擴充
+### 每個 service 實作至少需支援以下邏輯：
 
-- [ ] internal/test/api/router_test.go：驗證 API router 註冊是否正確，涵蓋版本、路徑。
-- [ ] internal/test/api/response_test.go：驗證回應格式是否一致，錯誤碼是否正常包裝。
-- [ ] internal/test/api/dto_validation_test.go：測試 DTO binding 與 validator 整合行為。
-- [ ] plugins/api/metrics.go：提供 plugin 擴充 API handler 範例（如 `/api/plugins/{mod}/metrics`）。
+- 注入對應模組 store（如 RuleStore、NotifierStore）
+- 調用跨模組 service（如 RuleService 呼叫 NotifierService）
+- 使用 eventbus 發送內部事件（如 rule 建立後發送通知）
+- 回傳標準錯誤與結構封裝
 
-## 9. internal/store 模組實作項目
+### 測試與擴充建議
+
+- [ ] internal/test/services/rule_service_test.go：測試 rule service CRUD 行為與事件觸發
+- [ ] internal/test/services/notifier_service_test.go：測試通知篩選與發送整合流程
+- [ ] internal/test/services/logger_service_test.go：測試日誌寫入與條件查詢
+- [ ] internal/test/services/metrics_service_test.go：測試資料點寫入與範圍查詢
+- [ ] internal/test/services/eventbus_service_test.go：測試多主題訂閱與事件觸發
+
+### 擴充建議
+
+- [ ] 支援 decorator：如 TracingService、AuditService 包裝原有 service
+- [ ] 可拆分 UseCase 邏輯單元：ex. CreateRuleUseCase、TriggerAlertUseCase
+- [ ] 支援 WithTenant(context.Context)：實作多租戶與權限管理流程
+
+## 7. internal/store 資料儲存與讀寫後端
 
 參考文件：
-- [docs/interfaces/store.md](../docs/interfaces/store.md)
-- [docs/architecture/store.md](../docs/architecture/store.md)
+- [docs/interfaces/store.md](./docs/interfaces/store.md)
+- [docs/architecture/store.md](./docs/architecture/store.md)
 
 ### 起手模組：RuleStore
 
@@ -198,83 +203,12 @@ adapter: internal/adapters/{module}/*
 - [ ] internal/test/store/metrics_store_test.go：測試 metrics store (influx)
 - [ ] internal/test/store/cache_wrapper_test.go：測試快取包裝邏輯是否正確
 
-## 10. internal/plugins 模組實作與 Plugin Lifecycle 測試項目
+
+## 8. internal/system 系統服務與整合層模組
 
 參考文件：
-- [docs/architecture/plugins.md](../docs/architecture/plugins.md)
-- [docs/interfaces/plugins.md](../docs/interfaces/plugins.md)
-
-### Plugin 管理模組
-
-- [x] internal/plugins/manager/lifecycle.go：控制 plugin 啟動與關閉流程（已實作）
-- [x] internal/plugins/manager/loader.go：載入 plugins 之邏輯（已實作）
-- [x] internal/plugins/manager/process.go：執行 Init/Close 流程控制（已實作）
-- [x] internal/plugins/manager/registry.go：註冊並掛載 plugins（已實作）
-
-### Plugin 註冊點與類型擴充
-
-- [ ] internal/plugins/plugins/auth/keycloak/keycloak.go：實作 Keycloak 認證策略註冊範例
-- [ ] internal/plugins/plugins/middleware/cors/cors.go：註冊 CORS MiddlewarePlugin
-- [ ] internal/plugins/plugins/middleware/ratelimit/ratelimit.go：註冊 RateLimit MiddlewarePlugin
-- [ ] internal/plugins/plugins/apihooks/alerts/alert_status.go：自訂 API route 插件範例
-- [ ] internal/plugins/plugins/eventbus/alertlog/handler.go：事件擴充處理器
-
-### Plugin 測試與驗證
-
-- [ ] internal/test/plugins/plugin_lifecycle_test.go：測試註冊、啟動、關閉 plugin 的全流程
-- [ ] internal/test/plugins/plugin_registry_test.go：驗證 plugin 註冊與反註冊的行為一致性
-- [ ] internal/test/plugins/fake_plugins.go：定義 fake plugin 實作供測試注入與模擬
-- [ ] internal/test/plugins/fake_context.go：模擬 plugin 執行上下文，驗證 Init/Close 行為
-- [ ] internal/test/plugins/plugin_integration_test.go：驗證 plugin 註冊後與核心模組整合情境（ex: middleware 呼叫順序）
-
-### 擴充建議
-
-- [ ] 支援 plugins/ 目錄自動掃描與 lazy loading
-- [ ] plugins 支援版本號與 metadata（如 name, description）
-- [ ] CLI 工具自動產生 plugin scaffold（未來 roadmap）
-
-
-## 11. internal/services 模組實作清單
-
-參考文件：
-- [docs/interfaces/services.md](../docs/interfaces/services.md)
-- [docs/architecture/services.md](../docs/architecture/services.md)
-
-### Service interface 與實作項目
-
-- [ ] internal/services/interfaces.go：集中定義跨模組的 service 介面
-- [ ] internal/services/rule/service.go：實作 RuleService，整合 rule store 與 notifier
-- [ ] internal/services/notifier/service.go：實作 NotifierService，支援通知發送、註冊與篩選
-- [ ] internal/services/logger/service.go：實作 LoggerService，支援結構化日誌寫入與查詢
-- [ ] internal/services/metrics/service.go：實作 MetricsService，支援時序資料寫入與查詢
-- [ ] internal/services/eventbus/service.go：實作 EventBusService，支援事件發送與訂閱觸發
-
-### 每個 service 實作至少需支援以下邏輯：
-
-- 注入對應模組 store（如 RuleStore、NotifierStore）
-- 調用跨模組 service（如 RuleService 呼叫 NotifierService）
-- 使用 eventbus 發送內部事件（如 rule 建立後發送通知）
-- 回傳標準錯誤與結構封裝
-
-### 測試與擴充建議
-
-- [ ] internal/test/services/rule_service_test.go：測試 rule service CRUD 行為與事件觸發
-- [ ] internal/test/services/notifier_service_test.go：測試通知篩選與發送整合流程
-- [ ] internal/test/services/logger_service_test.go：測試日誌寫入與條件查詢
-- [ ] internal/test/services/metrics_service_test.go：測試資料點寫入與範圍查詢
-- [ ] internal/test/services/eventbus_service_test.go：測試多主題訂閱與事件觸發
-
-### 擴充建議
-
-- [ ] 支援 decorator：如 TracingService、AuditService 包裝原有 service
-- [ ] 可拆分 UseCase 邏輯單元：ex. CreateRuleUseCase、TriggerAlertUseCase
-- [ ] 支援 WithTenant(context.Context)：實作多租戶與權限管理流程
-
-## 12. internal/system 模組初始實作項目
-
-參考文件：
-- [docs/interfaces/system_components.md](../docs/interfaces/system_components.md)
-- [docs/architecture/system.md](../docs/architecture/system.md)
+- [docs/interfaces/system_components.md](./docs/interfaces/system_components.md)
+- [docs/architecture/system.md](./docs/architecture/system.md)
 
 ### 預計目錄結構
 
@@ -330,8 +264,8 @@ internal/system/
 
 
 參考文件：
-- [docs/interfaces/infra.md](../docs/interfaces/infra.md)
-- [docs/architecture/infra.md](../docs/architecture/infra.md)
+- [docs/interfaces/infra.md](./docs/interfaces/infra.md)
+- [docs/architecture/infra.md](./docs/architecture/infra.md)
 
 ### 建議目錄結構
 
@@ -395,41 +329,11 @@ pkg/infra/
 - [ ] 可由 bootstrap 初始化階段建立並注入服務模組
 
 
-## 13. pkg/validation 模組函式建置清單
+
+## 9. pkg/security/encryption 加解密封裝模組
 
 參考文件：
-- [docs/interfaces/validation.md](../docs/interfaces/validation.md)
-
----
-
-### 建議目錄結構
-
-```
-pkg/validation/
-├── basic.go         # 基本欄位驗證（required, min/max length）
-├── regexp.go        # 格式驗證（email, IP, slug）
-├── jsonschema.go    # JSON schema 驗證輔助（選用）
-├── error.go         # 統一錯誤訊息結構
-```
-
----
-
-### 實作清單
-
-- [ ] pkg/validation/basic.go：實作 Required、MaxLength、MinLength、NotEmptySlice 等基本驗證函式
-- [ ] pkg/validation/basic_test.go：測試基本驗證函式的正確性與邊界情況
-- [ ] pkg/validation/regexp.go：實作格式驗證函式，如 IsEmail、IsSlug、IsIPv4、IsUUID 等
-- [ ] pkg/validation/regexp_test.go：測試格式驗證邏輯與特殊輸入案例
-- [ ] pkg/validation/error.go：定義 FieldError 結構與錯誤包裝工具
-- [ ] pkg/validation/error_test.go：測試錯誤包裝訊息與欄位回報正確性
-- [ ] pkg/validation/jsonschema.go：提供 ValidateJSONSchema 方法，支援 schema 驗證（選用）
-- [ ] pkg/validation/jsonschema_test.go：測試 schema 驗證錯誤與錯誤訊息包裝
-
-
-## 14. pkg/security/encryption 模組建置清單
-
-參考文件：
-- [docs/interfaces/encryption.md](../docs/interfaces/encryption.md)
+- [docs/interfaces/encryption.md](./docs/interfaces/encryption.md)
 
 ---
 
@@ -478,11 +382,43 @@ pkg/security/encryption/
 
 ---
 
-## 15. pkg/cmd CLI scaffold 建置項目
+## 10. pkg/validation 輸入驗證模組
 
 參考文件：
-- [docs/architecture/cmd.md](../docs/architecture/cmd.md)
-- [docs/interfaces/cmd.md](../docs/interfaces/cmd.md)
+- [docs/interfaces/validation.md](./docs/interfaces/validation.md)
+
+---
+
+### 建議目錄結構
+
+```
+pkg/validation/
+├── basic.go         # 基本欄位驗證（required, min/max length）
+├── regexp.go        # 格式驗證（email, IP, slug）
+├── jsonschema.go    # JSON schema 驗證輔助（選用）
+├── error.go         # 統一錯誤訊息結構
+```
+
+---
+
+### 實作清單
+
+- [ ] pkg/validation/basic.go：實作 Required、MaxLength、MinLength、NotEmptySlice 等基本驗證函式
+- [ ] pkg/validation/basic_test.go：測試基本驗證函式的正確性與邊界情況
+- [ ] pkg/validation/regexp.go：實作格式驗證函式，如 IsEmail、IsSlug、IsIPv4、IsUUID 等
+- [ ] pkg/validation/regexp_test.go：測試格式驗證邏輯與特殊輸入案例
+- [ ] pkg/validation/error.go：定義 FieldError 結構與錯誤包裝工具
+- [ ] pkg/validation/error_test.go：測試錯誤包裝訊息與欄位回報正確性
+- [ ] pkg/validation/jsonschema.go：提供 ValidateJSONSchema 方法，支援 schema 驗證（選用）
+- [ ] pkg/validation/jsonschema_test.go：測試 schema 驗證錯誤與錯誤訊息包裝
+
+
+## 11. pkg/cmd CLI 指令整合
+
+
+參考文件：
+- [docs/architecture/cmd.md](./docs/architecture/cmd.md)
+- [docs/interfaces/cmd.md](./docs/interfaces/cmd.md)
 
 ---
 
@@ -530,11 +466,11 @@ pkg/cmd/
 
 ---
 
-## 16. pkg/utils 模組目錄重構清單
+## 12. pkg/utils 輔助工具函式
 
 參考文件：
-- [docs/architecture/utils.md](../docs/architecture/utils.md)
-- [docs/interfaces/utils.md](../docs/interfaces/utils.md)
+- [docs/architecture/utils.md](./docs/architecture/utils.md)
+- [docs/interfaces/utils.md](./docs/interfaces/utils.md)
 
 ---
 
@@ -601,3 +537,41 @@ pkg/utils/
 - [ ] pkg/utils/pathutil/path_test.go：測試路徑拼接、相對/絕對判定
 - [ ] pkg/utils/pointer/pointer.go：指標輔助，如 StringPtr、BoolPtr 等
 - [ ] pkg/utils/pointer/pointer_test.go：測試指標生成與指標值判斷
+
+## 13. internal/rbac 權限控制模組與擴充支援
+
+參考文件：
+- [docs/architecture/rbac.md](./docs/architecture/rbac.md)
+- [docs/interfaces/rbac.md](./docs/interfaces/rbac.md)
+
+---
+
+### 模組實作清單
+
+- [ ] internal/rbac/accesscontrol/authorizer.go：主授權介面與 dispatch 控制
+- [ ] internal/rbac/accesscontrol/scope.go：定義 scope 接口與 GlobalScope、OrgScope 等實作
+- [ ] internal/rbac/accesscontrol/checker.go：快取與角色比對優化邏輯
+- [ ] internal/rbac/accesscontrol/middleware.go：Echo middleware 授權驗證邏輯
+- [ ] internal/rbac/org/org.go：組織邏輯與租戶切換實作
+- [ ] internal/rbac/org/org_delete_svc.go：刪除組織與相關 metadata 的清理邏輯
+- [ ] internal/rbac/org/model.go：組織模型與結構定義
+- [ ] internal/rbac/team/team.go：支援群組管理（可選）
+- [ ] internal/rbac/mock/fake.go：測試用假資料與假物件
+- [ ] internal/rbac/mock/mock.go：mock interface 實作供 service 層注入
+
+---
+
+### plugin 擴充模組（可選實作）
+
+- [ ] internal/plugins/serviceaccounts/serviceaccount_provider.go：服務帳號認證支援
+- [ ] internal/plugins/tempuser/invite_token.go：臨時使用者建立與驗證
+
+---
+
+### 測試與驗證建議
+
+- [ ] internal/test/rbac/authorizer_test.go：測試權限檢查邏輯與角色範疇判定
+- [ ] internal/test/rbac/scope_test.go：測試 scope 組合與 Matches 函式行為
+- [ ] internal/test/rbac/middleware_test.go：測試 Echo 路由 middleware 鍊授權處理
+- [ ] internal/test/rbac/org_test.go：組織 CRUD 測試流程
+- [ ] internal/test/rbac/mock_test.go：mock 對應行為正確性驗證

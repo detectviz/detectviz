@@ -2,6 +2,8 @@
 
 > 本文件為 Detectviz 專案中 `ConfigProvider` 介面的設計原則、使用情境與實作擴充方式整理，並統一與其他 interface 文件格式。
 
+- 統一管理所有模組設定結構於 `pkg/configtypes`，支援靜態與 plugin 配置
+
 ---
 
 ## 介面用途（What it does）
@@ -51,6 +53,78 @@ type ConfigProvider interface {
 
 ---
 
+## 模組設定結構存放位置
+
+Detectviz 中各模組的設定結構（如 NotifierConfig、CacheConfig）應統一定義於：
+
+```go
+pkg/configtypes/
+```
+
+每個模組對應一個 `{name}_config.go`，便於：
+
+- 保持 interface 與資料結構分離
+- 自動對應 `config.UnmarshalKey()` 載入模組配置
+- 提供良好 IDE 導引與文件生成支援
+
+### 設定結構總覽（Defined Config Structs）
+
+| 結構名稱             | 檔案位置                               | 用途與對應模組                                     |
+|----------------------|----------------------------------------|----------------------------------------------------|
+| `LoggerConfig`       | `pkg/configtypes/logger_config.go`     | 設定 logger 類型、Level、輸出格式等                |
+| `SchedulerConfig`    | `pkg/configtypes/scheduler_config.go`  | 設定排程器類型與參數                              |
+| `NotifierConfig`     | `pkg/configtypes/notifier_config.go`   | ✅ 已完成：定義通知方式（email/slack/webhook）     |
+| `CacheConfig`        | `pkg/configtypes/cache_config.go`      | ✅ 已完成：定義快取實作方式與參數（memory/redis） |
+| `AlertConfig`        | `pkg/configtypes/alert_config.go`      | 告警模組預設行為與閾值設定                         |
+| `BusConfig`          | `pkg/configtypes/bus_config.go`        | 指定使用哪一種 EventBus 實作                       |
+| `MetricsConfig`      | `pkg/configtypes/metrics_config.go`    | 設定查詢資料來源（prometheus/flux）等             |
+| `WebConfig`          | `pkg/configtypes/web_config.go`        | 🟡 預計實作：設定 HTMX 前端與靜態資源               |
+| `InfraConfig`        | `pkg/configtypes/infra_config.go`      | 🟡 預計實作：底層 Infra（如 HTTP Client, Retry）    |
+| `EncryptionConfig`   | `pkg/configtypes/encryption_config.go` | 🟡 預計實作：加密金鑰、演算法與 key rotation 設定  |
+| `ValidationConfig`   | `pkg/configtypes/validation_config.go` | 🟡 預計實作：輸入資料驗證控制與規則                |
+| `PluginConfig[T any]`| `pkg/configtypes/plugin_config.go`     | 提供 plugin 專屬結構包裝與載入                     |
+
+### PluginConfig[T] 用法
+
+若需為 plugin（如 `auth.keycloak`, `store.redis`）定義專屬設定結構，可透過以下方式實作：
+
+```go
+type KeycloakConfig struct {
+  URL string `mapstructure:"url" yaml:"url"`
+}
+
+type PluginConfig[T any] struct {
+  Config T
+}
+```
+
+搭配：
+
+```go
+config.UnmarshalKey("plugin.auth.keycloak", &PluginConfig[KeycloakConfig]{})
+```
+
+### 測試建議（Testing Strategy）
+
+- 建立對應 `*_test.go` 檔案測試配置反序列化與 fallback
+- 使用 `testutil.LoadConfigFromYAML` 驗證整體載入行為
+- PluginConfig 可獨立以泛型方式驗證任意結構
+
+### 擴充建議（Extensions）
+
+- 所有 struct 欄位應標註 `yaml/json/mapstructure` tag，建議格式：
+
+```go
+type Example struct {
+  Enabled bool `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+}
+```
+
+- 每新增模組應同步建立對應 `{module}_config.go`
+- 可進一步對接設定 Schema 驗證與 UI 編輯工具
+
+---
+
 ## 預期實作（Expected Implementations）
 
 | 類型     | 路徑位置                                   | 描述                            |
@@ -79,3 +153,6 @@ type ConfigProvider interface {
 - 規劃支援 json-schema-version，可提升未來 JSON 設定相容性管理
 
 ---
+
+---
+（本文已整併 configtypes.md 內容）

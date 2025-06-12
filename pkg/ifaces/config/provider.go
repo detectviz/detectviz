@@ -28,6 +28,34 @@ type ConfigProvider interface {
 	// zh: 回傳快取模組的組態設定。
 	GetCacheConfig() configtypes.CacheConfig
 
+	// GetLoggerConfig returns logger configuration.
+	// zh: 回傳 logger 模組設定。
+	GetLoggerConfig() configtypes.LoggerConfig
+
+	// GetSchedulerConfig returns scheduler configuration.
+	// zh: 回傳排程模組設定。
+	GetSchedulerConfig() configtypes.SchedulerConfig
+
+	// GetAlertConfig returns alert module configuration.
+	// zh: 回傳告警模組設定。
+	GetAlertConfig() configtypes.AlertConfig
+
+	// GetBusConfig returns eventbus configuration.
+	// zh: 回傳事件匯流排模組設定。
+	GetBusConfig() configtypes.BusConfig
+
+	// GetEncryptionConfig returns encryption strategy configuration.
+	// zh: 回傳加密模組設定。
+	GetEncryptionConfig() configtypes.EncryptionConfig
+
+	// GetWebConfig returns web frontend configuration.
+	// zh: 回傳 Web 模組設定。
+	GetWebConfig() configtypes.WebConfig
+
+	// GetPluginConfig unmarshal plugin config of specific path to target object.
+	// zh: 將 plugin 指定 key 的組態解析到傳入物件（可為任意結構）。
+	GetPluginConfig(key string, target interface{}) error
+
 	// GetNotifierConfigs returns the list of notifier configurations.
 	// zh: 回傳 notifier 設定的配置列表。
 	GetNotifierConfigs() []configtypes.NotifierConfig
