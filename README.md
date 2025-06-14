@@ -55,7 +55,7 @@ detectviz/
 │   ├── monitoring-stack     # 監控堆疊組合
 │   ├── observability-platform # 完整可觀測性平台組合
 │   └── alloy-devkit/        # Alloy 可觀測性開發套件
-│       ├── alloy-config.yaml    # Alloy 配置範本
+│       ├── alloy-config.river    # Alloy 配置範本
 │       ├── systemd/             # 系統服務配置
 │       │   └── alloy.service
 │       ├── examples/            # SDK 整合範例
@@ -789,7 +789,7 @@ func (r *DependencyResolver) ResolveDependencies(plugins []PluginConfig) ([]Plug
 DetectViz 整合 **Grafana Alloy** 作為統一的可觀測性代理，提供完整的 Traces、Logs、Metrics 收集與轉發能力：
 
 **核心特性：**
-- **配置驅動**：透過 `alloy-config.yaml` 統一管理監控配置
+- **配置驅動**：透過 `alloy-config.river` 統一管理監控配置
 - **OTLP 原生支援**：完整支援 OpenTelemetry Protocol
 - **多語言 SDK**：提供 Go、Python 等語言的整合範例
 - **Grafana 生態整合**：無縫對接 Tempo、Loki、Mimir

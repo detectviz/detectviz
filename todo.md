@@ -39,7 +39,7 @@
 
 - [x] 建立最小平台組合檔
   - `compositions/minimal-platform/composition.yaml` ✅
-  - `compositions/alloy-devkit/alloy-config.yaml` ✅
+  - `compositions/alloy-devkit/alloy-config.river` ✅
 
 - [x] 建立 scaffold 註解 README
   - `plugins/core/auth/jwt/README.md` ✅
