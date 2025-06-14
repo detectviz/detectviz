@@ -1,0 +1,149 @@
+# Grafana Alloy Configuration for DetectViz
+# zh: DetectViz 的 Grafana Alloy 配置
+
+# Server configuration
+# zh: 伺服器配置
+server:
+  log_level: info
+  http_listen_port: 12345
+
+# OpenTelemetry receiver configuration
+# zh: OpenTelemetry 接收器配置
+otelcol.receiver.otlp "detectviz" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  
+  output {
+    traces  = [otelcol.processor.batch.detectviz.input]
+    metrics = [otelcol.processor.batch.detectviz.input]
+    logs    = [otelcol.processor.batch.detectviz.input]
+  }
+}
+
+# Batch processor for performance
+# zh: 批次處理器以提升效能
+otelcol.processor.batch "detectviz" {
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.otlp.mimir.input]
+    logs    = [otelcol.exporter.otlp.loki.input]
+  }
+}
+
+# Tempo exporter for traces
+# zh: Tempo 追蹤匯出器
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "http://tempo:3200"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+# Mimir exporter for metrics
+# zh: Mimir 指標匯出器
+otelcol.exporter.otlp "mimir" {
+  client {
+    endpoint = "http://mimir:9009/otlp"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+# Loki exporter for logs
+# zh: Loki 日誌匯出器
+otelcol.exporter.otlp "loki" {
+  client {
+    endpoint = "http://loki:3100/otlp"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+# Prometheus metrics scraping
+# zh: Prometheus 指標抓取
+prometheus.scrape "detectviz_metrics" {
+  targets = [
+    {"__address__" = "localhost:8080", "job" = "detectviz-server"},
+    {"__address__" = "localhost:12345", "job" = "alloy-agent"},
+  ]
+  
+  forward_to = [prometheus.remote_write.mimir.receiver]
+  
+  scrape_interval = "15s"
+  metrics_path    = "/metrics"
+}
+
+# Prometheus remote write to Mimir
+# zh: Prometheus 遠端寫入到 Mimir
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir:9009/api/v1/push"
+  }
+}
+
+# Log collection from DetectViz
+# zh: 從 DetectViz 收集日誌
+loki.source.file "detectviz_logs" {
+  targets = [
+    {__path__ = "/var/log/detectviz/*.log", "job" = "detectviz"},
+    {__path__ = "/var/log/alloy/*.log", "job" = "alloy"},
+  ]
+  
+  forward_to = [loki.write.default.receiver]
+}
+
+# Loki write configuration
+# zh: Loki 寫入配置
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+# Service discovery for dynamic targets
+# zh: 動態目標的服務發現
+discovery.kubernetes "detectviz_pods" {
+  role = "pod"
+  
+  namespaces {
+    names = ["detectviz", "monitoring"]
+  }
+}
+
+# Relabeling for Kubernetes pods
+# zh: Kubernetes Pod 重新標記
+prometheus.scrape "kubernetes_pods" {
+  targets         = discovery.kubernetes.detectviz_pods.targets
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+  scrape_interval = "30s"
+  
+  relabel_configs = [
+    {
+      source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+      action        = "keep"
+      regex         = "true"
+    },
+    {
+      source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_path"]
+      action        = "replace"
+      target_label  = "__metrics_path__"
+      regex         = "(.+)"
+    },
+    {
+      source_labels = ["__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
+      action        = "replace"
+      regex         = "([^:]+)(?::\\d+)?;(\\d+)"
+      replacement   = "$1:$2"
+      target_label  = "__address__"
+    },
+  ]
+} 

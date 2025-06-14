@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Composition
+metadata:
+  name: minimal-platform
+  description: Minimal DetectViz platform for testing framework mechanisms
+  version: 1.0.0
+
+spec:
+  # Core platform components
+  platform:
+    registry:
+      enabled: true
+      type: memory
+    lifecycle:
+      enabled: true
+      timeout: 30s
+    composition:
+      enabled: true
+      validation: strict
+
+  # Core plugins (always loaded)
+  core_plugins:
+    - name: jwt-authenticator
+      type: auth
+      enabled: true
+      config:
+        secret_key: "minimal-platform-secret"
+        issuer: "detectviz-minimal"
+        expiry_time: "24h"
+
+    - name: logging-middleware
+      type: middleware
+      enabled: true
+      config:
+        level: info
+        format: json
+
+  # Community plugins (optional)
+  community_plugins:
+    - name: prometheus-importer
+      type: importer
+      enabled: false
+      config:
+        endpoint: "http://localhost:9090"
+        scrape_interval: "15s"
+        timeout: "10s"
+
+  # Application configuration
+  applications:
+    - name: server
+      enabled: true
+      config:
+        port: 8080
+        host: "0.0.0.0"
+
+    - name: cli
+      enabled: false
+
+    - name: agent
+      enabled: false
+
+  # Infrastructure configuration
+  infrastructure:
+    cache:
+      type: memory
+      config:
+        max_size: 1000
+        ttl: "1h"
+
+    eventbus:
+      type: memory
+      config:
+        buffer_size: 1000
+
+    logging:
+      level: info
+      output: stdout
+      format: json
+
+  # Security configuration
+  security:
+    authentication:
+      provider: jwt-authenticator
+      required: true
+
+    authorization:
+      enabled: false
+
+    permissions:
+      default_role: user
+      roles:
+        - name: user
+          permissions:
+            - action: read
+              resource: "*"
+        - name: admin
+          permissions:
+            - action: "*"
+              resource: "*"
+
+  # Dependency configuration
+  dependencies:
+    validation: true
+    auto_resolve: true
+
+  # Health check configuration
+  health:
+    enabled: true
+    interval: "30s"
+    timeout: "5s"
