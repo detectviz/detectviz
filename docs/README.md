@@ -1,23 +1,56 @@
-## scaffold: 未完成元件實作補強
+# DetectViz Docs OverviewAdd commentMore actions
 
-- [ ] 實作 LifecycleManager 主要操作
-  - 檔案：`internal/platform/composition/lifecycle.go`
-  - 區段：lines 228–247 目前為 TODO
-  - 預期：補齊啟動、關閉、資源釋放邏輯
+此文件目錄為 DetectViz 專案的文件與架構說明集合，供開發者與自動化 scaffold 工具（如 Cursor）參考。
 
-- [ ] 新增組合依賴解析器
-  - 預期檔案：`internal/platform/composition/resolver.go`
-  - 功能：實作 plugin depends_on 拓撲排序與組合順序解析
 
-- [ ] 實作 YAML 設定載入器
-  - 預期檔案：`pkg/config/loader/config_loader.go`
-  - 功能：解析 composition.yaml 並提供 plugin 初始設定
+---
 
-- [ ] 建立最小 Server 入口範例
-  - 預期檔案：`apps/server/main.go`
-  - 功能：可啟動一個註冊組合、啟動 plugins 的 server 範例
 
-- [ ] 修正 plugin 忽略設定參數問題
-  - 檔案：`plugins/core/auth/jwt/plugin.go` → `NewJWTAuthenticator()`
-  - 檔案：`plugins/community/importers/prometheus/plugin.go` → `NewPrometheusImporter()`
-  - 說明：目前未解析 config；應支援對應結構與預設值 fallback
+## 目錄
+
+
+
+```bash
+.
+├── deprecated-architecture/
+├── deprecated-detectviz-sourcecode/
+├── deprecated-interfaces/
+├── reference-sourcecode/
+│   ├── grafana
+│   ├── grafana-plugin-sdk-go
+│   ├── oncall
+│   └── telegraf
+├── coding-style-guide.md
+├── develop-guide.md
+├── foundation.md
+├── test-guide.md
+└── README.md
+```
+
+## 文件分類與用途
+
+| 類別 | 路徑 | 說明 |
+|------|------|------|
+| 開發與程式規範 | `develop-guide.md`, `coding-style-guide.md` | 說明目錄架構、命名原則、程式風格 |
+| 架構原則 | `foundation.md`, `test-guide.md` | 描述模組組成邏輯、測試分層、平台核心觀念 |
+| 架構規劃文件 | `detectviz-source-code.md` | DetectViz scaffold 建立與模組化規則藍圖 |
+| 舊版歷史檔案 | `deprecated-*` | 舊 detectviz 結構與 interface 歷史文件 |
+| 參考實作 | `reference-sourcecode/grafana`, `.../telegraf` | 外部系統實作結構簡化版，供映射與比較使用 |
+
+---
+
+## Scaffold 工具（如 Cursor）參考優先順序
+
+當進行 scaffold 或 plugin 自動產生時，建議依照下列優先讀取順序：
+
+1. `develop-guide.md` – 目錄與分類原則、命名慣例
+2. `coding-style-guide.md` – 命名、interface、實作撰寫風格
+3. `test-guide.md` – 對應測試目錄與資料夾分層
+4. `foundation.md` – 平台與模組可組合性核心觀念補充
+
+---
+
+## 注意
+
+- 所有 `deprecated-*` 目錄為歷史遷移保留，Cursor 不應參考。
+- 所有 `reference-sourcecode/` 僅供對照映射，不作 scaffold 依據。
