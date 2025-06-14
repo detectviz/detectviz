@@ -6,47 +6,101 @@
 
 ## 架構分層與開發原則
 
-detectviz 採用分層架構，依據職責劃分為：
+DetectViz 採用**組合式架構 (Composable Architecture)**，具備以下分層結構：
 
-- `apps/`：應用主程式（如 server、cli、testkit）
-- `internal/`：業務邏輯與模組實作區
-- `pkg/`：共用函式庫、interface、infra
-- `docs/`：架構說明與對應介面定義文件
+### 框架穩定層（核心不變）
+- `apps/`：應用組合層（server、cli、agent、testkit）
+- `pkg/platform/`：平台核心抽象（registry、composition、contracts）
+- `internal/platform/`：平台實作層（註冊機制、組合引擎、生命週期管理）
+- `plugins/core/`：核心插件（內建必要功能）
 
-所有模組皆應對應 `docs/interfaces/*.md` 定義規格，並配合 `/todo.md` 規劃實作。
+### 應用擴展層（隨組合擴展）
+- `compositions/`：平台組合方案（不同應用組合定義）
+- `pkg/domain/`：領域模型（業務實體）
+- `internal/services/`：服務層（業務邏輯實作）
+- `internal/adapters/`：適配器層（外部系統介接）
+- `plugins/community/`：社群插件（功能擴展）
+
+### 開發約束原則
+1. **依賴方向**：apps/ → internal/ → pkg/，禁止反向依賴
+2. **插件隔離**：plugin 間不可直接依賴，透過 contracts 介面互動
+3. **介面契約**：所有模組對應 `docs/interfaces/*.md` 定義規格
+4. **組合透明**：模組組合邏輯在 `compositions/` 中明確定義
 
 ---
 
-## 模組邊界圖（Clean Architecture）
+## Scaffold 架構與技術原則
 
-```mermaid
-graph LR
-    subgraph "應用層"
-        A1["apps/alert-app"]
-    end
-    
-    subgraph "服務層"
-        S1["internal/services/alert"]
-        S2["internal/services/rule"]
-    end
-    
-    subgraph "適配器層"
-        AD1["internal/adapters/notifier"]
-        AD2["internal/adapters/metrics"]
-    end
-    
-    subgraph "介面層"
-        I1["pkg/platform/contracts/alert"]
-        I2["pkg/platform/contracts/notifier"]
-    end
-    
-    A1 --> S1
-    A1 --> S2
-    S1 --> AD1
-    S2 --> AD2
-    AD1 --> I2
-    AD2 --> I2
+Detectviz 採用 Plugin 為核心的可擴充架構，設計重點如下：
+
+### 插件設計原則
+
+- 每個 plugin 應符合 SRP 原則，職責單一明確
+- Interface 駝峰定義於 `pkg/platform/contracts/`，並支援組合式註冊
+- Plugin 需支援：
+  - 動態註冊與 lifecycle 控制
+  - 配置 (`config`) 與 schema 驗證
+  - 開關控制（enabled）
+- plugin 類型範例如下（皆支援組合式註冊與 enable 控制）：
+  - Importer（如：`prometheus`, `telegraf`, `redis`, `csv`）
+  - Exporter（如：`influxdb`, `alertmanager`, `slack`）
+  - Notifier（如：`email`, `webhook`, `grafana`）
+  - Authenticator（如：`keycloak`, `ldap`, `saml`, `oauth2`）
+  - Middleware（如：`jwt`, `gzip`, `requestmeta`）
+  - WebUIPlugin（如：系統狀態頁、plugin 設定頁）
+  - Tools（如：`supportbundles`, `inject-debug-id`, 開發用中介插件）
+
+### 開發技術棧（後端）
+
+- 語言與框架：Go 1.22+、spf13/cobra（支援子指令與 flags）、Echo v5  
+- 伺服器 middleware：Echo middleware（Recover, Logger, Gzip 等）
+- 架構與模組：Clean Architecture 分層、支援 plugin + lifecycle 組裝
+- 設定管理：Viper（支援 hot reload）、`pkg/config/loader`, `pkg/config/schema`
+- 設定解析：mapstructure（cfg 解碼為 struct，配合 plugin config 使用）
+- Plugin 管理：Registry、Composition 組合、Lifecycle 控制器
+- 任務排程與佇列：Redis Streams、Cron 排程器（預留）
+- 日誌整合：otelzap（Zap logger with OTEL context，可與 logrus 並存使用）
+- 備援日誌：logrus（相容早期套件或 CLI log 輸出）
+- OTEL 資源註解：`go.opentelemetry.io/otel/sdk/resource`（提供 org, host, platform tag）
+- Observability：OTEL SDK（trace, log, metric），整合 Prometheus、Tempo、Loki、Alloy DevKit
+- OTEL 導入元件：
+  - `otelecho`：Echo middleware trace wrapper（主要 HTTP entrypoint）
+  - `opentelemetry-net-http`：標準 http.Client 外部呼叫追蹤
+  - `opentelemetry-logrus`：logrus 日誌支援 trace context
+  - `opentelemetry-database-sql`：若使用 `database/sql` 操作資料庫，支援 SQL trace
+  - `opentelemetry-gorm`：若 plugin 使用 GORM，可導入 DB ORM trace
+  - `opentelemetry-go-contrib/instrumentation/google.golang.org/grpc/otelgrpc`：gRPC interceptor，支援 trace context 傳遞與 metrics 自動導出
+
+
+### 開發技術棧（前端）
+
+- 框架與樣板：HTMX + Echo SSR + Templ（頁面產生）
+- UI 組件：AdminLTE, Tabulator.js（表格視覺化）
+- 導覽與權限：WebUIPlugin 註冊 nav node + JWT 權限驗證
+- Plugin 注入：支援前端 plugin 載入自定頁面與元件
+- iframe 整合：Grafana iframe（支援 var 組織切換、token 傳遞）
+
+### Scaffold 設計示意
+
+```text
+[DetectViz Applications]
+   ↓ OTLP (gRPC/HTTP)
+[Grafana Alloy Agent]
+   ├─→ Traces → Grafana Tempo
+   ├─→ Logs → Grafana Loki  
+   ├─→ Metrics → Grafana Mimir
+   └─→ Dashboard → Grafana iframe 嵌入
 ```
+
+### Alloy 可觀測性整合
+
+DetectViz 整合 **Grafana Alloy** 作為統一的可觀測性代理：
+
+- **Config-Driven 監控**：透過 `alloy-config.river` 統一管理監控配置
+- **OTLP 原生支援**：完整支援 OpenTelemetry Protocol
+- **多語言 SDK**：提供 Go、Python 等語言的整合範例
+- **系統服務化**：支援 systemd 等系統服務管理
+- **自動化部署**：透過 `internal/services/observability/alloy_manager.go` 管理
 
 ---
 
@@ -74,6 +128,50 @@ graph LR
 
 ---
 
+## 依賴管理與架構約束
+
+### 依賴方向規則
+
+為避免循環依賴，嚴格遵循以下依賴方向：
+
+```bash
+# 允許的依賴方向 (A → B 表示 A 可以依賴 B)
+plugins/ → pkg/platform/contracts/     # Plugin 實作契約介面
+plugins/ → pkg/shared/                 # Plugin 使用共用工具
+internal/ → pkg/                       # 內部實作依賴公共介面
+apps/ → internal/                      # 應用層依賴內部實作
+apps/ → pkg/                          # 應用層依賴公共介面
+
+# 禁止的依賴方向
+pkg/ ❌→ internal/                     # 公共介面不可依賴內部實作
+pkg/ ❌→ plugins/                      # 公共介面不可依賴具體插件
+internal/platform/ ❌→ plugins/        # 平台核心不可依賴具體插件
+```
+
+### Plugin 隔離約束
+
+```go
+// ✅ 正確：Plugin 透過契約介面互動
+type PrometheusExporter struct {
+    registry contracts.Registry  // 透過 registry 取得其他服務
+    logger   shared.Logger       // 使用共用工具
+}
+
+// ❌ 錯誤：Plugin 直接依賴其他 Plugin
+type PrometheusExporter struct {
+    influxImporter *influxdb.Importer  // 不可直接依賴其他 plugin
+}
+
+// ✅ 正確：透過事件或 registry 間接互動
+func (p *PrometheusExporter) Export(data any) error {
+    // 透過事件匯流排通知其他 plugin
+    p.eventBus.Publish("data.exported", data)
+    return nil
+}
+```
+
+---
+
 ## 命名與版本化建議
 
 - handler 分支版本：`v1/`, `v1beta1/` 路徑區分
@@ -84,18 +182,26 @@ graph LR
 
 ## 插件路徑與分類說明
 
-所有 plugins 依照功能與啟用層級分類為：
+所有 plugins 依照功能與信任層級分類為：
 
-- 核心組件：`plugins/core/`（平台啟動即需）
-- 社群擴充：`plugins/community/`（依 composition 載入）
-  - `importers/`, `exporters/`, `integrations/`
-- 開發工具：`plugins/tools/`（僅供除錯開發使用）
+### 核心插件：`plugins/core/`（框架穩定層，平台啟動必需）
+- `auth/`：認證策略（basic、jwt、session）
+- `middleware/`：HTTP 中介層（cors、ratelimit、logging、recovery、metrics）
+- `hooks/`：平台級事件 hook 系統
 
----
+### 社群插件：`plugins/community/`（應用擴展層，依 composition 載入）
+- `importers/`：資料匯入插件（Telegraf Input 模式）
+- `exporters/`：資料匯出插件（Telegraf Output 模式）
+- `integrations/`：第三方整合（observability、notification、security、system、processors）
+- `visualizers/`：視覺化整合（trace、topology、dashboard-builder）
+- `web/`：Web UI 擴展（themes、components、pages、navtree）
 
-## 推薦工具與風格
+### 工具插件：`plugins/tools/`（開發除錯使用）
+- `generators/`、`validators/`、`converters/`
+- `supportbundles/`、`middleware/inject-debug-id/`
 
-- 格式化工具：`golangci-lint`, `gofumpt`
-- 文件生成：支援 mermaid, markdown lint
-- 測試框架：`testing`, `testify`, `httptest`
-- Interface Style：使用明確動詞（如 `Apply`, `Evaluate`, `Resolve`）
+### 組合定義：`compositions/`（平台組合方案）
+- `minimal-platform/`：框架機制測試用組合
+- `monitoring-stack/`：監控堆疊組合
+- `observability-platform/`：完整可觀測性平台組合
+- `alloy-devkit/`：Alloy 可觀測性開發套件
