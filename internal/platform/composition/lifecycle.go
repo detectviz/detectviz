@@ -253,16 +253,178 @@ func (lm *LifecycleManager) publishEvent(eventType contracts.LifecycleEventType,
 		Component: component,
 		Timestamp: time.Now(),
 		Status:    status,
+		Metadata:  make(map[string]any),
 	}
 
 	if err != nil {
 		event.Error = err.Error()
 	}
 
+	// Notify all listeners
 	for _, listener := range lm.listeners {
-		// Fire and forget - don't block lifecycle operations on listener errors
-		go func(l contracts.LifecycleListener) {
-			_ = l.OnLifecycleEvent(event)
-		}(listener)
+		if listenerErr := listener.OnLifecycleEvent(event); listenerErr != nil {
+			// Log the error but don't fail the lifecycle operation
+			fmt.Printf("Lifecycle listener error: %v\n", listenerErr)
+		}
 	}
+}
+
+// StartAll starts all registered plugins with lifecycle management
+// zh: StartAll 啟動所有已註冊的插件並進行生命週期管理
+func (lm *LifecycleManager) StartAll(ctx context.Context, registry contracts.Registry) error {
+	lm.mutex.Lock()
+	defer lm.mutex.Unlock()
+
+	if lm.status != contracts.StatusInitialized && lm.status != contracts.StatusStopped {
+		return fmt.Errorf("lifecycle manager is not in a state to start (current: %s)", lm.status)
+	}
+
+	lm.status = contracts.StatusStarting
+	lm.publishEvent(contracts.EventStart, "lifecycle-manager", lm.status, nil)
+
+	// Get all plugins from registry
+	pluginNames := registry.ListPlugins()
+
+	// Start each plugin
+	for _, name := range pluginNames {
+		plugin, err := registry.GetPlugin(name)
+		if err != nil {
+			lm.status = contracts.StatusError
+			lm.publishEvent(contracts.EventError, name, contracts.StatusError, err)
+			return fmt.Errorf("failed to get plugin %s: %w", name, err)
+		}
+
+		// Check if plugin is LifecycleAware and call OnStart
+		if lifecyclePlugin, ok := plugin.(contracts.LifecycleAware); ok {
+			if err := lifecyclePlugin.OnStart(); err != nil {
+				lm.status = contracts.StatusError
+				lm.publishEvent(contracts.EventError, name, contracts.StatusError, err)
+				return fmt.Errorf("failed to start plugin %s: %w", name, err)
+			}
+		}
+
+		// Update component status
+		comp := contracts.ComponentInfo{
+			Name:   name,
+			Type:   "plugin",
+			Status: contracts.StatusRunning,
+		}
+		lm.components[name] = comp
+		lm.publishEvent(contracts.EventStart, name, contracts.StatusRunning, nil)
+	}
+
+	lm.status = contracts.StatusRunning
+	lm.publishEvent(contracts.EventStart, "lifecycle-manager", lm.status, nil)
+	return nil
+}
+
+// ShutdownAll shuts down all plugins in reverse order
+// zh: ShutdownAll 按反向順序關閉所有插件
+func (lm *LifecycleManager) ShutdownAll(ctx context.Context, registry contracts.Registry) error {
+	lm.mutex.Lock()
+	defer lm.mutex.Unlock()
+
+	lm.status = contracts.StatusShuttingDown
+	lm.publishEvent(contracts.EventShutdown, "lifecycle-manager", lm.status, nil)
+
+	// Get all plugin names in reverse order
+	pluginNames := registry.ListPlugins()
+
+	// Shutdown each plugin in reverse order
+	for i := len(pluginNames) - 1; i >= 0; i-- {
+		name := pluginNames[i]
+		plugin, err := registry.GetPlugin(name)
+		if err != nil {
+			lm.publishEvent(contracts.EventError, name, contracts.StatusError, err)
+			// Continue with other plugins even if one fails
+			continue
+		}
+
+		// Check if plugin is LifecycleAware and call OnShutdown
+		if lifecyclePlugin, ok := plugin.(contracts.LifecycleAware); ok {
+			if err := lifecyclePlugin.OnShutdown(); err != nil {
+				lm.publishEvent(contracts.EventError, name, contracts.StatusError, err)
+				// Continue with other plugins even if one fails
+				continue
+			}
+		}
+
+		// Call plugin's Shutdown method
+		if err := plugin.Shutdown(); err != nil {
+			lm.publishEvent(contracts.EventError, name, contracts.StatusError, err)
+			// Continue with other plugins even if one fails
+			continue
+		}
+
+		// Update component status
+		if comp, exists := lm.components[name]; exists {
+			comp.Status = contracts.StatusShutdown
+			lm.components[name] = comp
+		}
+		lm.publishEvent(contracts.EventShutdown, name, contracts.StatusShutdown, nil)
+	}
+
+	lm.status = contracts.StatusShutdown
+	lm.publishEvent(contracts.EventShutdown, "lifecycle-manager", lm.status, nil)
+	return nil
+}
+
+// HealthCheck performs health checks on all registered plugins
+// zh: HealthCheck 對所有已註冊的插件執行健康檢查
+func (lm *LifecycleManager) HealthCheck(ctx context.Context, registry contracts.Registry) map[string]contracts.HealthStatus {
+	lm.mutex.RLock()
+	defer lm.mutex.RUnlock()
+
+	healthStatus := make(map[string]contracts.HealthStatus)
+	pluginNames := registry.ListPlugins()
+
+	for _, name := range pluginNames {
+		plugin, err := registry.GetPlugin(name)
+		if err != nil {
+			healthStatus[name] = contracts.HealthStatus{
+				Status:    "unhealthy",
+				Message:   fmt.Sprintf("Failed to get plugin: %v", err),
+				Timestamp: time.Now(),
+			}
+			continue
+		}
+
+		// Check if plugin implements HealthChecker interface
+		if healthChecker, ok := plugin.(contracts.HealthChecker); ok {
+			status := healthChecker.CheckHealth(ctx)
+			healthStatus[name] = status
+		} else {
+			// Default health status for plugins that don't implement HealthChecker
+			healthStatus[name] = contracts.HealthStatus{
+				Status:    "healthy",
+				Message:   "Plugin is running (no health check implemented)",
+				Timestamp: time.Now(),
+			}
+		}
+	}
+
+	return healthStatus
+}
+
+// GetComponentStatus returns the status of a specific component
+// zh: GetComponentStatus 回傳特定組件的狀態
+func (lm *LifecycleManager) GetComponentStatus(name string) (contracts.ComponentInfo, bool) {
+	lm.mutex.RLock()
+	defer lm.mutex.RUnlock()
+
+	comp, exists := lm.components[name]
+	return comp, exists
+}
+
+// ListComponents returns all registered components
+// zh: ListComponents 回傳所有已註冊的組件
+func (lm *LifecycleManager) ListComponents() []contracts.ComponentInfo {
+	lm.mutex.RLock()
+	defer lm.mutex.RUnlock()
+
+	components := make([]contracts.ComponentInfo, 0, len(lm.components))
+	for _, comp := range lm.components {
+		components = append(components, comp)
+	}
+	return components
 }

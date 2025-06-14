@@ -69,11 +69,21 @@ func (m *Manager) GetPlugin(name string) (contracts.Plugin, error) {
 		return nil, fmt.Errorf("plugin %s not found", name)
 	}
 
-	// Create instance with default config for now
-	// TODO: Load actual config from configuration system
-	instance, err := factory(nil)
+	// Get plugin configuration from metadata
+	var config any
+	if metadata, exists := m.metadata[name]; exists {
+		config = metadata.Config
+	}
+
+	// Create instance with actual config
+	instance, err := factory(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create plugin %s: %w", name, err)
+	}
+
+	// Initialize the plugin
+	if err := instance.Init(config); err != nil {
+		return nil, fmt.Errorf("failed to initialize plugin %s: %w", name, err)
 	}
 
 	m.instances[name] = instance
