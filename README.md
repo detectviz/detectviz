@@ -1,383 +1,1372 @@
-# Detectviz
+# DetectViz 組合式架構介紹
 
-Detectviz 是一套基於 Clean Architecture 設計的模組化監控與告警平台，支援指標查詢、條件比對、事件發布與通知處理。透過 Plugin 機制整合各種數據來源（如 Prometheus, InfluxDB, Flux）與通知通道（如 Email, Slack, Webhook），並提供可維護、可擴充的事件處理架構。
+## 架構特性分析
 
----
+DetectViz 採用 **組合式架構 (Composable Architecture)** 設計，具備以下特點：
+1. **Clean Architecture 分層**：明確的職責分離和依賴方向
+2. **Plugin-First 設計**：核心功能通過插件系統擴展
+3. **Platform-as-Code**：架構本身作為平台，支援快速組裝
+4. **模組化組合**：不同應用可選擇性組合所需模組
+5. **框架導向**：DetectViz 本身是框架，可組合成不同的應用平台
 
-## 專案目錄結構
+## 應避免以下問題
+
+基於組合式架構的需求，目錄結構問題如下：
+1. **插件邊界不清**：Plugin 相關目錄分散在不同層級
+2. **平台層缺失**：缺乏明確的平台抽象層
+3. **組合邏輯混亂**：模組組合和註冊邏輯分散
+4. **可組合性差**：難以快速組裝新的應用組合
+5. **框架與應用混淆**：未明確區分穩定框架層與可擴展應用層
+
+## 組合式架構重構建議
+
+### 核心設計原則
+1. **平台優先**：Platform 層提供核心組合能力
+2. **插件驅動**：功能通過 Plugin 系統擴展
+3. **組合透明**：模組組合邏輯清晰可見
+4. **契約明確**：介面契約統一定義
+5. **框架穩定**：核心框架層保持穩定，應用層靈活擴展
+
+## 🎯 架構參考策略
+
+基於 ChatGPT 討論分析，DetectViz 採用混合參考策略：
+
+### **Plugin 系統：完全對齊 Telegraf**
+- **Input/Output 分離**：`importers/` 與 `exporters/` 完全分開實作
+- **單一責任原則**：每個 plugin 僅負責讀取或寫入，不混合功能
+- **Interface 驅動**：實作 `Importer`、`Exporter` 等標準介面
+- **註冊機制**：採用 `Add(name, factory)` 模式進行 plugin 註冊
+
+### **Platform 抽象：參考 Grafana**
+- **Registry 系統**：plugin 載入與管理機制
+- **Configuration Schema**：配置驗證與模式定義
+- **Plugin Metadata**：插件元資料管理與版本控制
+
+### 重構後目錄結構
 
 ```bash
 detectviz/
-├── apps/                     # 每個 App 對應一套業務 API / UI
-│   ├── {module}-app/
-│   │   ├── main.go
-│   │   ├── routes.go
-│   │   ├── conf/
-│   │   ├── web/              # HTMX 頁面（可含 layout, partials, pages）
-│		│   └── handler/          # HTTP handler 層
-│		│
-├── internal/                 # 核心邏輯模組（僅供 apps 使用）
-│		│                       
-│   ├── middleware/           # 所有 HTTP middleware 實作
-│		│		├── auth.go
-│		│		├── logger.go
-│		│		├── tracing.go
-│		│		├── metrics.go
-│		│		├── recovery.go
-│		│		├── csrf/csrf.go
-│		│		├── cookies/cookies.go
-│		│		├── requestmeta/request_metadata.go
-│		│		└── testing.go
-│		│
-│   ├── api/                   # API server 啟動與路由註冊邏輯
-│		│		├── errors/
-│		│		│   └── api_error.go   # 定義 ErrorCode, Message, ToJSON()
-│		│		├── dtos/              # 用於 DTO / Response 共用模型
-│		│		│   ├── alert.go       # CreateAlertRequest, AlertResponse
-│		│		│   ├── rule.go
-│		│		│   └── common.go
-│		│		├── response/
-│		│		│   └── json_response.go # JSON(), ErrorJSON(), WithStatus()
-│		│   ├── router.go          # 統一註冊模組 API route
-│		│   ├── middleware.go      # 組合中介層鏈結
-│		│   └── server.go          # HTTP Server 啟動與註冊控制
-│		│
-│   ├── handlers/              # 功能模組 API handler 與 controller 實作
-│		│   ├── alert/v0alpha1/    # Alert 模組 REST handler
-│		│   ├── rule/v0alpha1/     # Rule 模組 handler
-│		│   ├── report/v0alpha1/   # 報表模組 handler
-│		│   └── common/            # 回應格式、錯誤、驗證工具
-│		│
-│   ├── auth/                  # Authenticator 策略與登入邏輯（Plugin 可擴充）
-│		│   ├── login/             # 傳統帳號密碼登入
-│		│   ├── oauthtoken/        # 儲存 Token / Session
-│		│   ├── ssosettings/       # 設定各種 SSO 登入參數
-│		│   ├── strategies/        # 每種登入方式的策略模組（可 plugin 注入）
-│		│   ├── context.go         # UserInfo 注入與提取
-│		│   ├── identity.go        # Requester 介面（參考 Grafana）
-│		│   └── registry.go        # 動態註冊多組 authenticator
-│		│
-│   ├── services/
-│		│   ├── alert/
-│		│		│   ├── alert.go           # Init, Enabled
-│		│		│   ├── service.go         # 實作 interface
-│		│		│   ├── interface.go       # 定義給 bootstrap 用的接口
-│		│		│   ├── handler.go         # 若有 REST API
-│		│		│   ├── cmd.go             # 若有 CLI
-│		│		│   └── eventbus.go        # 若有事件訂閱
-│		│		│
-│   ├── adapters/              # 各模組抽象介面實作
-│   │   ├── alert
-│   │   │   ├── evaluator.go
-│   │   │   ├── flux
-│   │   │   ├── mock_adapter_test.go
-│   │   │   ├── mock_adapter.go
-│   │   │   └── prom
-│   │   ├── cachestore
-│   │   │   ├── memory
-│   │   │   ├── redis
-│   │   │   ├── registry_test.go
-│   │   │   └── registry.go
-│   │   ├── eventbus
-│   │   │   ├── alert_test.go
-│   │   │   ├── alert.go
-│   │   │   ├── host_test.go
-│   │   │   ├── host.go
-│   │   │   ├── inmemory.go
-│   │   │   ├── metric_test.go
-│   │   │   ├── metric.go
-│   │   │   ├── task_test.go
-│   │   │   └── task.go
-│   │   ├── importer
-│   │   │   ├── registry_test.go
-│   │   │   └── registry.go
-│   │   ├── libraryelements
-│   │   │   ├── service_adapter_test.go
-│   │   │   └── service_adapter.go
-│   │   ├── logger
-│   │   │   ├── logger_test.go
-│   │   │   ├── nop_adapter.go
-│   │   │   └── zap_adapter.go
-│   │   ├── metrics
-│   │   │   ├── aggregator.go
-│   │   │   ├── query_adapter.go
-│   │   │   ├── series_reader_adapter.go
-│   │   │   ├── transformer_adapter.go
-│   │   │   └── writer_adapter.go
-│   │   ├── modules
-│   │   │   ├── engine_adapter_test.go
-│   │   │   ├── engine_adapter.go
-│   │   │   ├── listener_adapter.go
-│   │   │   ├── registry_adapter.go
-│   │   │   └── runner_adapter.go
-│   │   ├── notifier
-│   │   │   ├── email_adapter_test.go
-│   │   │   ├── email_adapter.go
-│   │   │   ├── mock_adapter.go
-│   │   │   ├── multi.go
-│   │   │   ├── nop.go
-│   │   │   ├── slack_adapter_test.go
-│   │   │   ├── slack_adapter.go
-│   │   │   ├── webhook_adapter_test.go
-│   │   │   └── webhook_adapter.go
-│   │   ├── scheduler
-│   │   │   ├── cron_adapter_test.go
-│   │   │   ├── cron_adapter.go
-│   │   │   ├── mock_adapter.go
-│   │   │   ├── workerpool_adapter_test.go
-│   │   │   └── workerpool_adapter.go
-│   │   ├── server
-│   │   │   └── server_adapter.go
-│   │   └── versioning
-│   │       ├── store_adapter_test.go
-│   │       └── store_adapter.go
-│   ├── registry/                # 模組註冊中心
-│   │   ├── alert
-│   │   │   └── registry.go
-│   │   ├── cachestore
-│   │   │   └── registry.go
-│   │   ├── config
-│   │   │   └── registry.go
-│   │   ├── eventbus
-│   │   │   ├── plugins.go
-│   │   │   ├── providers.go
-│   │   │   ├── registry_inmemory.go
-│   │   │   └── registry.go
-│   │   ├── logger
-│   │   │   └── registry.go
-│   │   ├── notifier
-│   │   │   ├── registry_test.go
-│   │   │   └── registry.go
-│   │   ├── scheduler
-│   │   │   └── registry.go
-│   │   ├── decoder.go
-│   │   ├── engine.go
-│   │   ├── loader.go
-│   │   └── registry.go
-│   ├── store/             # 只依賴 interface，不直接操作底層存取
-
-│   ├── plugins/               # 可插拔模組擴充（可註冊 middleware, auth 策略等）
-│		│   ├── auth/              # 額外擴充的登入策略
-│		│   ├── middleware/        # 其他中介層插件（如 CORS、限速器）
-│   │   ├── apihooks/          # 提供平台 API 擴充註冊點
-│   │   ├── eventbus/
-│   │   │   └── alertlog
-│   │   ├── manager/
-│   │   │   ├── lifecycle_test.go
-│   │   │   ├── lifecycle.go
-│   │   │   ├── loader_test.go
-│   │   │   ├── loader.go
-│   │   │   ├── process_test.go
-│   │   │   ├── process.go
-│   │   │   ├── registry_test.go
-│   │   │   └── registry.go
-│   │   └── plugin.go
-│   ├── rbac/
-│		│   ├── accesscontrol     # 權限控管與角色資源策略
-│		│   ├── org               # 組織管理與切換
-│		│   ├── team              # 使用者群組功能
-│		│   └── user              # 使用者 CRUD 與偏好設定
-│   ├── system/
-│		│		├── apiserver/        # REST 接口建構器
-│		│		├── grpcserver/       # gRPC 接口與注入點
-│		│		├── datasourceproxy/  # 多數據源後端轉發器
-│		│		├── caching/          # 快取框架與策略
-│		│		├── quota/            # 資源使用限制機制
-│		│		├── supportbundles/   # 問題診斷壓縮包產生器
-│		│		├── stats/            # 平台統計收集
-│		│		├── hooks/            # 模組內事件 hook 機制
-│		│		├── live/             # Live 推播或事件橋接器
-│		│  	└── search/           # 資料或資源統一查詢服務
-│   ├── server/
-│   │   ├── instrumentation.go
-│   │   ├── runner.go
-│   │   └── server.go
-│   ├── bootstrap/
-│   │   ├── config_loader.go
-│   │   ├── elements_loader.go
-│   │   ├── versioning_loader.go
-│   │   ├── init.go
-│   │   └── wire.go
-│   ├── modules/
-│   │   ├── dependencies.go
-│   │   ├── engine.go
-│   │   ├── listener.go
-│   │   ├── registry.go
-│   │   └── runner.go
-│   └── test/                 # 整合測試、fakes、mocks、testutil 工具
+├── apps/                    # 應用組合層(組裝不同的應用)【框架穩定層】
+│   ├── server/              # 對外 HTTP/gRPC 提供服務
+│   ├── cli/                 # 指令列管理工具  
+│   ├── agent/               # 分散式收集與資料推送
+│   └── testkit/             # 測試模組與組合正確性
 │
-├── pkg/                      # 共用抽象（interface、config）            
-│   ├── config/								# 設定載入與注入模組
-│   │   ├── default.go
-│   │   └── README.md
-│   ├── configtypes/
-│   │   ├── cache_config.go
-│   │   └── notifier_config.go
-│   ├── ifaces/               # 模組抽象介面定義
+├── compositions/            # 平台組合方案【隨組合擴展】
+│   ├── minimal-platform     # 框架機制測試用組合
+│   ├── monitoring-stack     # 監控堆疊組合
+│   └── observability-platform # 完整可觀測性平台組合
+│
+├── pkg/                     # 公共契約與平台介面
+│   ├── platform/            # 平台核心抽象【框架穩定層】
+│   │   ├── contracts/       # 跨模組契約定義【隨組合擴展】
+│   │   │   ├── alerting/
+│   │   │   ├── monitoring/
+│   │   │   ├── notification/
+│   │   │   ├── storage/
+│   │   │   ├── analytics/   # 分析相關契約
+│   │   │   ├── security/    # 安全相關契約
+│   │   │   ├── lifecycle/   # 插件生命週期
+│   │   │   ├── importers/   # 匯入器契約
+│   │   │   └── exporters/   # 匯出器契約
+│   │   ├── registry/        # 註冊機制抽象【框架穩定層】
+│   │   │   ├── interface.go
+│   │   │   ├── discovery.go
+│   │   │   └── composer.go  # 組合邏輯
+│   │   └── composition/     # 組合模式定義【框架穩定層】
+│   │       ├── app.go       # 應用組合介面
+│   │       ├── module.go    # 模組組合介面
+│   │       ├── plugin.go    # 插件組合介面
+│   │       └── metadata.go  # 插件元資料定義
+│   │
+│   ├── domain/              # 領域模型(業務實體)【隨組合擴展】
 │   │   ├── alert/
-│   │   │   ├── evaluate_test.go
-│   │   │   ├── evaluate.go
-│   │   │   └── evaluator.go
-│   │   ├── bus/
-│   │   │   ├── alert.go
-│   │   │   ├── host.go
-│   │   │   ├── metric.go
-│   │   │   ├── task.go
-│   │   │   └── types.go
-│   │   ├── cachestore/
-│   │   │   └── cachestore.go
-│   │   ├── config/
-│   │   │   └── config.go
-│   │   ├── event/
-│   │   │   ├── alert.go
-│   │   │   ├── host.go
-│   │   │   ├── metric.go
-│   │   │   ├── task.go
-│   │   │   └── types.go
-│   │   ├── eventbus/
-│   │   │   ├── eventbus.go
-│   │   │   └── provider.go
-│   │   ├── logger/
-│   │   │   ├── context_test.go
-│   │   │   ├── context.go
-│   │   │   ├── logger.go
-│   │   │   └── nop_logger.go
-│   │   ├── metrics/
-│   │   │   ├── metric.go
-│   │   │   ├── query.go
-│   │   │   └── types.go
-│   │   ├── modules/
-│   │   │   └── modules.go
-│   │   ├── notifier/
-│   │   │   └── notifier.go
-│   │   ├── plugins/
-│   │   │   └── plugin.go
-│   │   ├── registry/
-│   │   │   └── registry.go
-│   │   ├── scheduler/
-│   │   │   ├── mock_adapter_test.go
-│   │   │   └── scheduler.go
-│   │   ├── server/
-│   │   │   └── server.go
-│   │   └── web/
-│   │				├── context.go         # 自訂 context 包含 request/user/logger
-│   │				├── router.go          # 註冊與匹配邏輯
-│   │				├── binding.go         # JSON bind 與驗證
-│   │				├── response_writer.go # 攔截與回應控制
-│   │				├── web.go             # 主入口：定義 router、middleware
-│   │ 			└── webtest/           # 單元測試與 chain 模擬
-│   ├── registry/
-│   │   ├── apis/
-│   │   │   ├── datasource/
-│   │   │   ├── host/
-│   │   │   └── plugin/
-│   │   ├── kinds/
-│   │   │   ├── testdata
-│   │   │   └── validator.go
-│   │   ├── registry.go
-│   │   └── schemas/
-│   │       ├── datasource.schema.yaml
-│   │       ├── host.schema.yaml
-│   │       └── index.yaml
-│   ├── importer/
-│   │   └── interface.go
-│   ├── libraryelements/
-│   │   ├── interface.go
-│   │   ├── registry.go
-│   │   ├── store_memory.go
-│   │   └── types.go
-│   ├── validations           # 表單驗證、參數邏輯聚焦
-│   ├── infra/
-│   ├── utils/                # 各類通用工具、輔助函式
-│   └── mocks/                # 使用 mockery 產出的 mock interface（自動生成）
-├── plugins/                  # 可插拔模組：可獨立引用、註冊、替換
-│   ├── auth
-│   ├── datasources
-│   ├── exporter
-│   ├── tools
-│   └── visuals
-├── scripts/                  # 輔助腳本（備份、啟動、模擬工具）
-├── deploy/                   # Docker 與環境部署相關設定
-├── build/                    # 建置相關的工具和腳本，主要用於 CI/CD 和打包過程
-├── docs/                     # 架構文件、介面規範、擴充開發指南
-└── README.md
+│   │   ├── metric/
+│   │   ├── rule/
+│   │   ├── notification/
+│   │   ├── user/            # 使用者領域
+│   │   ├── organization/    # 組織領域
+│   │   └── security/        # 安全領域
+│   │
+│   ├── config/              # 統一配置管理
+│   │   ├── types/           # 配置結構定義(原 configtypes)【隨組合擴展】
+│   │   ├── schema/          # 配置模式驗證【框架穩定層】
+│   │   ├── composition/     # 組合配置【框架穩定層】
+│   │   └── loader/          # 配置載入器【框架穩定層】
+│   │
+│   └── shared/              # 共用工具與常數【框架穩定層】
+│       ├── errors/
+│       ├── utils/
+│       ├── constants/
+│       ├── types/           # 基礎類型定義
+│       └── security/        # 🆕 安全功能共用實作
+│           ├── encryption.go # AES, RSA, Hash 相關邏輯
+│           ├── token.go     # JWT, SessionToken 產生/驗證
+│           ├── secrets.go   # KMS/SecretsManager 介面
+│           ├── rbac.go      # 角色權限控制
+│           └── audit.go     # 安全審計日誌
+│
+├── internal/                # 實作層(Clean Architecture 分層)
+│   ├── ports/               # 輸入輸出埠【框架穩定層】
+│   │   ├── http/            # HTTP API 埠
+│   │   │   ├── handlers/    # API 處理器
+│   │   │   ├── middleware/  # HTTP 中介層
+│   │   │   └── routes/      # 路由定義
+│   │   ├── grpc/            # gRPC 埠
+│   │   ├── cli/             # CLI 埠
+│   │   └── web/             # Web UI 埠
+│   │
+│   ├── services/            # 服務層(業務邏輯)【隨組合擴展】
+│   │   ├── alerting/        # 告警服務
+│   │   ├── monitoring/      # 監控服務
+│   │   ├── notification/    # 通知服務
+│   │   ├── reporting/       # 報告服務
+│   │   ├── analytics/       # 分析服務
+│   │   ├── security/        # 🆕 安全服務層
+│   │   │   ├── authenticator.go # 認證服務
+│   │   │   ├── authorizer.go    # 授權服務
+│   │   │   ├── token_service.go # Token 管理服務
+│   │   │   └── audit_service.go # 審計服務
+│   │   ├── user/            # 使用者服務
+│   │   └── composition/     # 組合服務
+│   │
+│   ├── adapters/            # 適配器層(外部系統介接)【隨組合擴展】
+│   │   ├── importers/       # 資料匯入適配器(平台資料存取)
+│   │   │   ├── users/       # 使用者資料匯入
+│   │   │   ├── organizations/ # 組織資料匯入
+│   │   │   ├── configs/     # 配置資料匯入
+│   │   │   └── policies/    # 政策資料匯入
+│   │   ├── exporters/       # 資料匯出適配器(監控輸出)
+│   │   │   ├── logs/        # 日誌匯出
+│   │   │   ├── traces/      # 追蹤匯出
+│   │   │   ├── metrics/     # 指標匯出
+│   │   │   └── events/      # 事件匯出
+│   │   └── integrations/    # 第三方整合適配器
+│   │       ├── prometheus/  # Prometheus 整合
+│   │       ├── influxdb/    # InfluxDB 整合
+│   │       ├── email/       # 郵件整合
+│   │       ├── slack/       # Slack 整合
+│   │       ├── webhook/     # Webhook 整合
+│   │       └── ldap/        # LDAP 整合
+│   │
+│   ├── platform/            # 平台實作層【框架穩定層】
+│   │   ├── registry/        # 註冊機制實作
+│   │   │   ├── manager.go   # 註冊管理器
+│   │   │   ├── discovery.go # 自動發現
+│   │   │   ├── resolver.go  # 依賴解析
+│   │   │   └── auth.go      # 🆕 認證插件註冊
+│   │   ├── composition/     # 組合引擎實作
+│   │   │   ├── builder.go   # 組合建構器
+│   │   │   ├── lifecycle.go # 🎯 生命週期管理(核心實作)
+│   │   │   ├── injector.go  # 依賴注入
+│   │   │   └── validator.go # 🆕 組合驗證器
+│   │   └── runtime/         # 運行時管理
+│   │       ├── bootstrap.go
+│   │       ├── shutdown.go
+│   │       └── health.go
+│   │
+│   ├── repositories/        # 資料存取層【隨組合擴展】
+│   │   ├── alert/
+│   │   ├── rule/
+│   │   ├── metric/
+│   │   ├── user/
+│   │   ├── organization/    # 組織資料存取
+│   │   ├── policy/          # 政策資料存取
+│   │   └── plugin/          # 插件元資料儲存
+│   │
+│   └── infrastructure/      # 基礎設施層【框架穩定層】
+│       ├── eventbus/        # 事件匯流排(介面層)
+│       ├── cache/           # 快取系統(介面層 + memory fallback)
+│       │   ├── interface.go # CacheClient interface
+│       │   ├── memory.go    # 預設 fallback 實作
+│       │   └── context.go   # Context wrapper
+│       ├── metrics/         # 指標收集
+│       ├── logging/         # 日誌系統
+│       └── tracing/         # 追蹤系統
+│    
+└── plugins/                 # 插件生態系統
+    ├── core/                # 核心插件(內建)【框架穩定層】
+    │   ├── auth/            # 認證插件
+    │   │   ├── basic/       # 基本認證
+    │   │   ├── jwt/         # JWT 認證
+    │   │   └── session/     # Session 認證
+    │   ├── middleware/      # 中介層插件
+    │   │   ├── cors/        # 跨域處理
+    │   │   ├── ratelimit/   # 限速控制
+    │   │   ├── logging/     # 請求日誌
+    │   │   ├── recovery/    # 錯誤恢復
+    │   │   └── metrics/     # HTTP 指標記錄
+    │   └── hooks/           # 🆕 平台級事件 hook 系統
+    │
+    └── community/           # 社群插件【隨組合擴展】
+        ├── importers/       # 資料匯入插件(Telegraf Input 模式)
+        │   ├── prometheus/  # 從 Prometheus 抓取 metrics
+        │   ├── influxdb/    # 從 InfluxDB 查詢時序資料
+        │   ├── loki/        # 從 Loki 查詢日誌
+        │   ├── mysql/       # 從 MySQL 匯入資料
+        │   ├── sqlite/      # 從 SQLite 匯入資料
+        │   ├── redis/       # 從 Redis 載入快取資料
+        │   ├── csv/         # 匯入 CSV 檔案
+        │   ├── json/        # 匯入 JSON 資料
+        │   └── api/         # 透過 API 匯入資料
+        │
+        ├── exporters/       # 資料匯出插件(Telegraf Output 模式)
+        │   ├── prometheus/  # 暴露 /metrics 給 Prometheus
+        │   ├── influxdb/    # 寫入資料到 InfluxDB
+        │   ├── loki/        # 推送日誌到 Loki
+        │   ├── mysql/       # 寫入資料到 MySQL
+        │   ├── sqlite/      # 寫入資料到 SQLite
+        │   ├── redis/       # 推送資料到 Redis
+        │   ├── csv/         # 匯出為 CSV 檔案
+        │   ├── json/        # 匯出為 JSON 格式
+        │   └── api/         # 透過 API 推送資料
+        │
+        ├── integrations/    # 第三方整合插件
+        │   ├── notification/ # 通知整合
+        │   │   ├── email/   # 郵件通知
+        │   │   ├── slack/   # Slack 通知
+        │   │   └── webhook/ # Webhook 通知
+        │   ├── security/    # 安全整合
+        │   │   ├── keycloak/ # Keycloak IdP 整合
+        │   │   ├── ldap/    # LDAP 整合
+        │   │   ├── oauth/   # OAuth2 通用實作
+        │   │   ├── saml/    # SAML SSO 整合
+        │   │   ├── radius/  # RADIUS 認證
+        │   │   ├── team/    # 團隊管理(可選)
+        │   │   └── ssosettings/ # SSO 設定管理
+        │   ├── middleware/  # 可選中介層
+        │   │   ├── tracing/ # OpenTelemetry 追蹤
+        │   │   ├── csrf/    # CSRF 保護
+        │   │   └── gzip/    # 回應壓縮
+        │   ├── cache/       # 快取實作插件
+        │   │   └── redis/   # Redis 快取實作
+        │   ├── system/      # 系統整合
+        │   │   ├── datasourceproxy/ # 資料源代理
+        │   │   ├── quota/   # 資源配額管理
+        │   │   ├── search/  # 統一查詢服務
+        │   │   └── live/    # 即時推播橋接
+        │   └── processors/  # 🆕 資料處理器整合
+        │       ├── alert-processor/ # 告警處理器
+        │       │   ├── deduplicator.go # 去重邏輯
+        │       │   ├── enricher.go     # 資料豐富化
+        │       │   └── aggregator.go   # 聚合處理
+        │       ├── metric-processor/   # 指標處理器
+        │       └── log-processor/      # 日誌處理器
+        │
+        ├── tools/           # 工具插件
+        │   ├── generators/  # 產生器工具
+        │   ├── validators/  # 驗證工具
+        │   ├── converters/  # 轉換工具
+        │   ├── supportbundles/ # 問題診斷工具
+        │   └── middleware/  # 開發用中介層
+        │       ├── cookies/ # Cookie 管理輔助
+        │       ├── requestmeta/ # Request metadata 處理
+        │       └── inject-debug-id/ # Debug ID 注入
+        │
+        └── visualizers/     # 🆕 視覺化整合
+            ├── trace-visualizer/   # 追蹤視覺化
+            ├── topology-visualizer/ # 拓撲視覺化
+            └── dashboard-builder/  # 儀表板建構器
+
 ```
 
-### 補充說明:
-- `pkg`: 可重用模組、interface、工具（對外穩定）
-- `internal`: 各業務邏輯模組（僅供 app 使用，不外部引用）
-- `internal/api`:  API server 啟動與路由註冊邏輯
-- `internal/apis`: 各模組功能 API handler 與版本切分
-- `internal/auth`: 支援多種登入策略，可註冊外部 plugin
-- `internal/middleware`: 提供通用中介層，可由 plugins 擴充
-- 各 app 的 API route 將由各模組自行註冊並統一導入 router
-- API 路由與模組 API 採用 plugin 式注入
+## 🏗️ 框架穩定性分析
 
----
-
-## 已實作模組
-
-- **Logger**：支援 Zap 實作與 NopLogger。
-- **ConfigProvider**：統一提供全域設定注入。
-- **EventBus**：可註冊多種事件處理器（Host, Metric, Alert, Task）。
-- **AlertEvaluator**：支援 Prometheus、Flux 查詢條件擴充。
-- **Scheduler**：支援 Cron 與 WorkerPool 型任務排程。
-- **Notifier**：支援 Email、Slack、Webhook 多種通道。
-
-## 尚未實作的模組（但已設計初版）
-
-- `internal/web/`：負責 HTMX Web 組件、模板與畫面渲染
-- `internal/store/`：提供統一 CRUD 接口，可由 plugin datasource backend 注入實作
-- `internal/plugins/datasources/`：各種資料來源實作（influxdb, loki, file 等）
-- `internal/services/`：封裝業務邏輯，不直接操作 handler 或 adapter
-- `pkg/infra/metrics/`：Prometheus exporter 模組
-- `pkg/infra/tracing/`：OpenTelemetry 追蹤邏輯
-- `pkg/infra/httpclient/`：統一 http 呼叫邏輯與 middleware
-- `pkg/security/encryption/`：AES 封裝與 provider 模組
-- `pkg/utils/`：各類通用函式（pointer, string, retryer, uri 等）
-
-### 未實作:
-apps/alert-app
-internal/middleware
-internal/api
-internal/apis
-internal/auth
-internal/alert
-internal/rabc
-internal/system/*
-internal/plugins/auth
-internal/plugins/middleware
-internal/plugins/apihooks
-pkg/infra/*
-pkg/utils/*
-plugins/*
-internal/web
-
-
-
----
-
-## 啟動方式
-
-請搭配各 `apps/` 內主程式使用 `go run` 或 `make` 指令：
+### **框架穩定層(Core Framework)**
+這些目錄隨著 DetectViz 框架成熟會趨向穩定：
 
 ```bash
-go run ./apps/alert-app/main.go
-make run-scheduler
+# 應用組合框架
+apps/                        # 應用類型穩定(server, cli, agent, testkit)
+
+# 平台核心框架  
+pkg/platform/registry/       # 註冊機制抽象
+pkg/platform/composition/    # 組合模式定義
+pkg/config/schema/           # 配置模式驗證
+pkg/config/composition/      # 組合配置
+pkg/config/loader/           # 配置載入器
+pkg/shared/                  # 共用工具
+
+# 平台實作框架
+internal/platform/           # 平台實作層
+internal/infrastructure/     # 基礎設施層
+internal/ports/              # 輸入輸出埠
+
+# 核心插件框架
+plugins/core/                # 內建核心插件
+
+# 範例與教學
+examples/                    # 範例與教學
 ```
 
-可參考 `scripts/` 或 `Makefile` 中的啟動流程與模擬指令。
+### **應用擴展層(Application Extensions)**
+這些目錄會隨著組合方案增加而持續擴充：
+
+```bash
+# 契約與領域擴展
+pkg/platform/contracts/      # 新的領域契約
+pkg/domain/                  # 新的領域模型
+pkg/config/types/            # 新的配置類型
+
+# 服務與適配器擴展
+internal/services/           # 新的業務服務
+internal/adapters/           # 新的適配器實作
+internal/repositories/       # 新的資料存取
+
+# 社群插件擴展
+plugins/community/           # 社群貢獻插件
+plugins/custom/              # 自訂插件
+
+# 組合方案擴展
+compositions/                # 新的組合定義
+```
+
+## 🔧 核心架構決策與實作策略
+
+### **1. Lifecycle 管理策略**
+基於討論決定，生命週期管理是平台核心職責：
+
+```bash
+internal/platform/composition/
+├── builder.go       # 組合建構器
+├── lifecycle.go     # 🎯 生命週期管理(核心實作)
+├── injector.go      # 依賴注入
+└── validator.go     # 🆕 組合驗證器
+```
+
+**生命週期介面設計：**
+```go
+// 平台級生命週期管理
+type LifecycleManager interface {
+    Initialize(ctx context.Context) error
+    Start(ctx context.Context) error
+    Stop(ctx context.Context) error
+    Shutdown(ctx context.Context) error
+}
+
+// 插件生命週期感知介面
+type LifecycleAware interface {
+    OnRegister() error
+    OnStart() error
+    OnStop() error
+    OnShutdown() error
+}
+```
+
+### **2. Security 實作層級策略**
+Security 功能實作於共用層，由上層服務注入：
+
+```bash
+pkg/shared/security/         # 🆕 安全功能共用實作
+├── encryption.go           # AES, RSA, Hash 相關邏輯
+├── token.go               # JWT, SessionToken 產生/驗證
+├── secrets.go             # KMS/SecretsManager 介面
+├── rbac.go                # 🆕 角色權限控制
+└── audit.go               # 🆕 安全審計日誌
+
+internal/services/security/  # 🆕 安全服務層
+├── authenticator.go        # 認證服務
+├── authorizer.go          # 授權服務
+├── token_service.go       # Token 管理服務
+└── audit_service.go       # 審計服務
+```
+
+**安全服務註冊模式：**
+```go
+// 由 internal/services/security 引用 pkg/shared/security
+type SecurityService struct {
+    tokenSigner    security.TokenSigner
+    passwordHasher security.PasswordHasher
+    encryptor      security.Encryptor
+}
+
+// 註冊到平台
+func (s *SecurityService) Register(registry Registry) error {
+    registry.RegisterAuthenticator("jwt", s.NewJWTAuthenticator)
+    registry.RegisterAuthorizer("rbac", s.NewRBACAuthorizer)
+    return nil
+}
+```
+
+### **3. System 模組細化策略**
+將 system 相關功能細化為可組合的插件：
+
+```bash
+# 原本的基礎設施層保留最小介面
+internal/infrastructure/     
+├── eventbus/               # 保留事件匯流排介面
+├── cache/                  # 保留快取介面(含 memory fallback)
+└── health/                 # 保留健康檢查介面
+
+# 具體實作移至社群插件
+plugins/community/exporters/
+├── prometheus/             # Prometheus metrics 匯出
+├── loki/                   # Loki logs 匯出  
+├── jaeger/                 # Jaeger traces 匯出
+└── opentelemetry/          # OpenTelemetry 匯出
+
+plugins/community/integrations/
+├── eventbus/
+│   ├── nats/               # NATS 事件匯流排
+│   ├── kafka/              # Kafka 事件匯流排
+│   └── redis/              # Redis 事件匯流排
+├── cache/
+│   └── redis/              # Redis 快取實作
+└── monitoring/
+    ├── healthcheck/        # 健康檢查整合
+    ├── metrics/            # 指標收集整合
+    └── tracing/            # 追蹤整合
+```
+
+### **4. Caching 策略說明**
+基於討論決定，快取採用混合策略：
+
+**保留基礎設施介面層：**
+```bash
+internal/infrastructure/cache/
+├── interface.go        # CacheClient interface 定義
+├── memory.go           # 預設 memory 實作(fallback)
+└── context.go          # Context wrapper
+```
+
+**Plugin 實作層：**
+```bash
+plugins/community/
+├── importers/redis/        # 載入快取種子資料
+├── exporters/redis/        # 輸出計算結果到 Redis
+└── integrations/cache/redis/ # Redis 快取實作注入
+```
+
+### **5. Processor 與 Visualizer 擴展策略**
+基於現有 integrations 進行功能疊加：
+
+```bash
+plugins/community/integrations/
+├── processors/             # 🆕 資料處理器整合
+│   ├── alert-processor/    # 告警處理器
+│   │   ├── deduplicator.go # 去重邏輯
+│   │   ├── enricher.go     # 資料豐富化
+│   │   └── aggregator.go   # 聚合處理
+│   ├── metric-processor/   # 指標處理器
+│   └── log-processor/      # 日誌處理器
+└── visualizers/            # 🆕 視覺化整合
+    ├── trace-visualizer/   # 追蹤視覺化
+    ├── topology-visualizer/ # 拓撲視覺化
+    └── dashboard-builder/  # 儀表板建構器
+```
+
+**可插拔配置範例：**
+```yaml
+composition:
+  name: "enhanced-monitoring"
+  plugins:
+    # 基礎監控
+    - community/exporters/prometheus
+    - community/integrations/notification/slack
+    
+    # 可選的處理器(enabled 控制)
+    - community/integrations/processors/alert-processor:
+        enabled: true
+        config:
+          deduplication: true
+          enrichment: true
+    
+    # 可選的視覺化(enabled 控制)
+    - community/integrations/visualizers/trace-visualizer:
+        enabled: false  # 可關閉以保持輕量
+```
+
+## 🎯 核心插件最終設計
+
+基於討論，`plugins/core/` 保持精簡：
+
+```bash
+plugins/core/                # 核心插件(框架穩定層)
+├── auth/                   # 認證策略
+│   ├── basic/              # 基本認證
+│   ├── jwt/                # JWT 認證
+│   └── session/            # Session 認證
+├── middleware/             # HTTP 中介層
+│   ├── cors/               # 跨域處理
+│   ├── ratelimit/          # 限速控制
+│   ├── logging/            # 請求日誌
+│   ├── recovery/           # 錯誤恢復
+│   └── metrics/            # HTTP 指標記錄
+└── hooks/                  # 平台級事件 hook 系統
+```
+
+**不新增的核心插件：**
+- ❌ `core/lifecycle/` → 由 `internal/platform/composition/lifecycle.go` 處理
+- ❌ `core/security/` → 由 `pkg/shared/security/` + `internal/services/security/` 處理  
+- ❌ `core/system/` → 細化為 `plugins/community/` 的各種整合插件
+
+## 🔌 Plugin 設計規範
+
+### **Plugin Interface 標準**
+```go
+// 基礎 Plugin 介面
+type Plugin interface {
+    Name() string
+    Version() string
+    Description() string
+    Init(config any) error
+    Shutdown() error
+}
+
+// 匯入器介面 (Telegraf Input 模式)
+type Importer interface {
+    Plugin
+    Import(ctx context.Context) error
+}
+
+// 匯出器介面 (Telegraf Output 模式)  
+type Exporter interface {
+    Plugin
+    Export(ctx context.Context, data any) error
+}
+
+// 生命週期感知介面
+type LifecycleAware interface {
+    OnRegister() error
+    OnStart() error
+    OnStop() error
+    OnShutdown() error
+}
+```
+
+### **Plugin 註冊模式**
+```go
+// 每個 plugin 目錄下的 plugin.go
+func Register(reg contracts.Registry) {
+    reg.RegisterImporter("prometheus", NewPrometheusImporter)
+    reg.RegisterExporter("prometheus", NewPrometheusExporter)
+}
+
+// Plugin 工廠函式
+func NewPrometheusImporter(config any) (contracts.Importer, error) {
+    return &PrometheusImporter{config: config}, nil
+}
+```
+
+### **Plugin 元資料定義**
+```go
+// pkg/platform/composition/metadata.go
+type PluginMetadata struct {
+    Name        string            `yaml:"name"`
+    Version     string            `yaml:"version"`
+    Type        string            `yaml:"type"` // importer, exporter, integration, tool
+    Category    string            `yaml:"category"` // core, community, custom
+    Description string            `yaml:"description"`
+    Author      string            `yaml:"author"`
+    License     string            `yaml:"license"`
+    Dependencies []string         `yaml:"dependencies"`
+    Config      map[string]any    `yaml:"config"`
+    Enabled     bool              `yaml:"enabled"`
+}
+```
+
+## 🏛️ 依賴管理與設計約束
+
+### **依賴方向規則**
+為避免循環依賴，嚴格遵循以下依賴方向：
+
+```bash
+# 允許的依賴方向 (A → B 表示 A 可以依賴 B)
+plugins/ → pkg/platform/contracts/     # Plugin 實作契約介面
+plugins/ → pkg/shared/                 # Plugin 使用共用工具
+internal/ → pkg/                       # 內部實作依賴公共介面
+apps/ → internal/                      # 應用層依賴內部實作
+apps/ → pkg/                          # 應用層依賴公共介面
+
+# 禁止的依賴方向
+pkg/ ❌→ internal/                     # 公共介面不可依賴內部實作
+pkg/ ❌→ plugins/                      # 公共介面不可依賴具體插件
+internal/platform/ ❌→ plugins/        # 平台核心不可依賴具體插件
+```
+
+### **分層約束規則**
+
+| 層級 | 可依賴層級 | 禁止依賴 | 說明 |
+|------|------------|----------|------|
+| `apps/` | `internal/`, `pkg/` | `plugins/` 直接依賴 | 透過 registry 動態載入 plugin |
+| `internal/services/` | `pkg/domain/`, `pkg/shared/`, `internal/repositories/` | `plugins/`, `internal/ports/` | 服務層不依賴外部埠或具體插件 |
+| `internal/adapters/` | `pkg/platform/contracts/`, `pkg/shared/` | `internal/services/` | 適配器不依賴業務邏輯 |
+| `internal/platform/` | `pkg/platform/`, `pkg/shared/` | `internal/services/`, `plugins/` | 平台核心保持獨立 |
+| `plugins/` | `pkg/platform/contracts/`, `pkg/shared/` | `internal/`, 其他 `plugins/` | Plugin 間不可相互依賴 |
+| `pkg/platform/contracts/` | `pkg/shared/types/` | 所有其他模組 | 契約層保持純淨 |
+
+### **Plugin 隔離約束**
+```go
+// ✅ 正確：Plugin 透過契約介面互動
+type PrometheusExporter struct {
+    registry contracts.Registry  // 透過 registry 取得其他服務
+    logger   shared.Logger       // 使用共用工具
+}
+
+// ❌ 錯誤：Plugin 直接依賴其他 Plugin
+type PrometheusExporter struct {
+    influxImporter *influxdb.Importer  // 不可直接依賴其他 plugin
+}
+
+// ✅ 正確：透過事件或 registry 間接互動
+func (p *PrometheusExporter) Export(data any) error {
+    // 透過事件匯流排通知其他 plugin
+    p.eventBus.Publish("data.exported", data)
+    return nil
+}
+```
+
+### **Configuration 依賴管理**
+```yaml
+# compositions/monitoring-stack.yaml
+composition:
+  name: "monitoring-stack"
+  dependencies:  # 🆕 明確聲明依賴關係
+    - pkg/platform/contracts/exporters
+    - pkg/shared/security
+  plugins:
+    - community/exporters/prometheus:
+        depends_on: []  # 無依賴
+    - community/integrations/notification/slack:
+        depends_on: ["prometheus"]  # 依賴 prometheus 先啟動
+```
+
+### **Runtime 依賴解析**
+```go
+// internal/platform/composition/resolver.go
+type DependencyResolver struct {
+    registry contracts.Registry
+    graph    *DependencyGraph
+}
+
+func (r *DependencyResolver) ResolveDependencies(plugins []PluginConfig) ([]Plugin, error) {
+    // 1. 建立依賴圖
+    // 2. 檢測循環依賴
+    // 3. 拓撲排序
+    // 4. 按順序初始化 plugin
+}
+```
+
+## 🎯 架構演進路徑
+
+### **階段一：核心穩定化**
+1. 完善 `internal/platform/composition/lifecycle.go`
+2. 建立 `pkg/shared/security/` 共用安全功能
+3. 保持 `plugins/core/` 精簡設計
+
+### **階段二：系統插件化**
+1. 將 `internal/infrastructure/` 具體實作移至 `plugins/community/`
+2. 保留最小介面在基礎設施層
+3. 建立可組合的監控堆疊
+
+### **階段三：功能擴展**
+1. 基於現有 integrations 疊加 processor 功能
+2. 開發可選的 visualizer 插件
+3. 完善 enabled/disabled 控制機制
+
+### **階段四：生態完善**
+1. 建立 plugin 開發工具鏈
+2. 完善 plugin 測試與驗證機制
+3. 建立 plugin 市場與分發機制
 
 ---
 
-## 文件導引
+這個調整後的架構更好地反映了討論中的核心決策，保持了框架的穩定性同時提供了充分的擴展彈性。特別是：
 
-- [docs/interfaces/](docs/interfaces/)：介面定義與實作契約說明
-- [internal/registry/](internal/registry/)：模組註冊流程（AlertEvaluator、Notifier、Scheduler 等）
-- [internal/test/README.md](internal/test/README.md)：測試策略與實際目錄規劃
-- [docs/develop-guide.md](docs/develop-guide.md)：設計原則與架構圖
-- [docs/coding-style-guide.md](docs/coding-style-guide.md)：程式撰寫風格（命名規則、註解格式、golangci-lint 設定）
+1. **明確了 Telegraf vs Grafana 的參考策略**
+2. **完善了 Plugin 系統的設計規範**
+3. **補充了具體的實作策略和程式碼範例**
+4. **加入了 Plugin 元資料和生命週期管理**
+5. **提供了清晰的架構演進路徑**
 
 ---
 
+## 🔗 Plugin 間通訊與資料流
+
+### **通訊機制設計**
+
+**1. 事件驅動通訊 (推薦)**
+```go
+// pkg/platform/contracts/eventbus.go
+type EventBus interface {
+    Publish(topic string, data any) error
+    Subscribe(topic string, handler EventHandler) error
+    Unsubscribe(topic string, handler EventHandler) error
+}
+
+type EventHandler func(event Event) error
+
+type Event struct {
+    ID        string                 `json:"id"`
+    Topic     string                 `json:"topic"`
+    Source    string                 `json:"source"`    // 來源 plugin
+    Timestamp time.Time              `json:"timestamp"`
+    Data      map[string]interface{} `json:"data"`
+    Metadata  map[string]string      `json:"metadata"`
+}
+```
+
+**2. 資料管道通訊**
+```go
+// pkg/platform/contracts/pipeline.go
+type DataPipeline interface {
+    Send(data StandardData) error
+    Receive() <-chan StandardData
+    Transform(transformer DataTransformer) DataPipeline
+}
+
+type StandardData struct {
+    Type      string                 `json:"type"`      // metrics, logs, traces, alerts
+    Source    string                 `json:"source"`    // 來源 plugin
+    Timestamp time.Time              `json:"timestamp"`
+    Labels    map[string]string      `json:"labels"`
+    Fields    map[string]interface{} `json:"fields"`
+    Raw       []byte                 `json:"raw,omitempty"`
+}
+```
+
+### **資料格式標準化**
+
+**統一資料模型：**
+```go
+// pkg/shared/types/data.go
+type MetricData struct {
+    Name      string            `json:"name"`
+    Value     float64           `json:"value"`
+    Unit      string            `json:"unit"`
+    Labels    map[string]string `json:"labels"`
+    Timestamp time.Time         `json:"timestamp"`
+}
+
+type LogData struct {
+    Level     string            `json:"level"`
+    Message   string            `json:"message"`
+    Source    string            `json:"source"`
+    Labels    map[string]string `json:"labels"`
+    Timestamp time.Time         `json:"timestamp"`
+    Fields    map[string]any    `json:"fields"`
+}
+
+type AlertData struct {
+    ID          string            `json:"id"`
+    Title       string            `json:"title"`
+    Description string            `json:"description"`
+    Severity    string            `json:"severity"`
+    Status      string            `json:"status"`
+    Labels      map[string]string `json:"labels"`
+    Annotations map[string]string `json:"annotations"`
+    StartsAt    time.Time         `json:"starts_at"`
+    EndsAt      *time.Time        `json:"ends_at,omitempty"`
+}
+```
+
+### **Plugin 通訊範例**
+
+**Importer → Exporter 資料流：**
+```go
+// plugins/community/importers/prometheus/importer.go
+func (p *PrometheusImporter) Import(ctx context.Context) error {
+    metrics, err := p.scrapeMetrics()
+    if err != nil {
+        return err
+    }
+    
+    // 透過事件匯流排發送資料
+    for _, metric := range metrics {
+        event := Event{
+            Topic:  "data.metrics.collected",
+            Source: "prometheus-importer",
+            Data:   map[string]interface{}{"metric": metric},
+        }
+        p.eventBus.Publish(event.Topic, event)
+    }
+    return nil
+}
+
+// plugins/community/exporters/influxdb/exporter.go
+func (e *InfluxDBExporter) OnStart() error {
+    // 訂閱 metrics 事件
+    return e.eventBus.Subscribe("data.metrics.collected", e.handleMetrics)
+}
+
+func (e *InfluxDBExporter) handleMetrics(event Event) error {
+    metric := event.Data["metric"].(MetricData)
+    return e.writeToInfluxDB(metric)
+}
+```
+
+### **資料流管道設計**
+```go
+// internal/platform/runtime/pipeline.go
+type PipelineManager struct {
+    importers []contracts.Importer
+    exporters []contracts.Exporter
+    pipeline  contracts.DataPipeline
+}
+
+func (pm *PipelineManager) Start() error {
+    // 1. 啟動所有 importers
+    for _, importer := range pm.importers {
+        go pm.runImporter(importer)
+    }
+    
+    // 2. 啟動資料處理管道
+    go pm.processPipeline()
+    
+    // 3. 啟動所有 exporters
+    for _, exporter := range pm.exporters {
+        go pm.runExporter(exporter)
+    }
+    
+    return nil
+}
+```
+
+### **錯誤處理與重試機制**
+```go
+// pkg/platform/contracts/reliability.go
+type ReliabilityConfig struct {
+    MaxRetries    int           `yaml:"max_retries"`
+    RetryInterval time.Duration `yaml:"retry_interval"`
+    CircuitBreaker bool         `yaml:"circuit_breaker"`
+    DeadLetterQueue bool        `yaml:"dead_letter_queue"`
+}
+
+type ReliableEventBus struct {
+    eventBus EventBus
+    config   ReliabilityConfig
+    dlq      DeadLetterQueue
+}
+
+func (r *ReliableEventBus) PublishWithRetry(topic string, data any) error {
+    for i := 0; i < r.config.MaxRetries; i++ {
+        if err := r.eventBus.Publish(topic, data); err == nil {
+            return nil
+        }
+        time.Sleep(r.config.RetryInterval)
+    }
+    
+    // 重試失敗，送入死信佇列
+    return r.dlq.Send(topic, data)
+}
+```
+
+## ⚡ 效能與可擴展性設計
+
+### **Plugin 載入效能優化**
+
+**1. 延遲載入 (Lazy Loading)**
+```go
+// internal/platform/registry/lazy_loader.go
+type LazyPluginLoader struct {
+    registry map[string]PluginFactory
+    loaded   map[string]Plugin
+    mutex    sync.RWMutex
+}
+
+func (l *LazyPluginLoader) GetPlugin(name string) (Plugin, error) {
+    l.mutex.RLock()
+    if plugin, exists := l.loaded[name]; exists {
+        l.mutex.RUnlock()
+        return plugin, nil
+    }
+    l.mutex.RUnlock()
+    
+    // 延遲載入
+    l.mutex.Lock()
+    defer l.mutex.Unlock()
+    
+    factory, exists := l.registry[name]
+    if !exists {
+        return nil, fmt.Errorf("plugin %s not found", name)
+    }
+    
+    plugin, err := factory()
+    if err != nil {
+        return nil, err
+    }
+    
+    l.loaded[name] = plugin
+    return plugin, nil
+}
+```
+
+**2. Plugin 池化管理**
+```go
+// internal/platform/runtime/pool.go
+type PluginPool struct {
+    plugins chan Plugin
+    factory PluginFactory
+    config  PoolConfig
+}
+
+type PoolConfig struct {
+    MinSize     int `yaml:"min_size"`
+    MaxSize     int `yaml:"max_size"`
+    IdleTimeout time.Duration `yaml:"idle_timeout"`
+}
+
+func (p *PluginPool) Get() Plugin {
+    select {
+    case plugin := <-p.plugins:
+        return plugin
+    default:
+        // 池中無可用 plugin，創建新的
+        plugin, _ := p.factory()
+        return plugin
+    }
+}
+
+func (p *PluginPool) Put(plugin Plugin) {
+    select {
+    case p.plugins <- plugin:
+        // 成功歸還到池中
+    default:
+        // 池已滿，關閉 plugin
+        plugin.Shutdown()
+    }
+}
+```
+
+### **記憶體管理策略**
+
+**1. Plugin 生命週期管理**
+```go
+// pkg/platform/contracts/lifecycle.go
+type MemoryAware interface {
+    GetMemoryUsage() MemoryStats
+    SetMemoryLimit(limit int64) error
+    Cleanup() error
+}
+
+type MemoryStats struct {
+    AllocatedBytes int64 `json:"allocated_bytes"`
+    UsedBytes      int64 `json:"used_bytes"`
+    MaxBytes       int64 `json:"max_bytes"`
+}
+
+// internal/platform/runtime/memory_manager.go
+type MemoryManager struct {
+    plugins     map[string]Plugin
+    limits      map[string]int64
+    monitor     *MemoryMonitor
+    gcTrigger   chan struct{}
+}
+
+func (m *MemoryManager) MonitorMemory() {
+    ticker := time.NewTicker(30 * time.Second)
+    defer ticker.Stop()
+    
+    for {
+        select {
+        case <-ticker.C:
+            m.checkMemoryUsage()
+        case <-m.gcTrigger:
+            m.forceGarbageCollection()
+        }
+    }
+}
+```
+
+**2. 資料緩衝區管理**
+```go
+// pkg/shared/buffer/ring_buffer.go
+type RingBuffer struct {
+    data     []StandardData
+    head     int
+    tail     int
+    size     int
+    capacity int
+    mutex    sync.RWMutex
+}
+
+func (rb *RingBuffer) Push(data StandardData) bool {
+    rb.mutex.Lock()
+    defer rb.mutex.Unlock()
+    
+    if rb.size == rb.capacity {
+        // 緩衝區滿，覆蓋最舊的資料
+        rb.head = (rb.head + 1) % rb.capacity
+    } else {
+        rb.size++
+    }
+    
+    rb.data[rb.tail] = data
+    rb.tail = (rb.tail + 1) % rb.capacity
+    return true
+}
+```
+
+### **水平擴展架構**
+
+**1. 分散式 Plugin 執行**
+```go
+// internal/platform/distributed/node.go
+type DistributedNode struct {
+    nodeID    string
+    plugins   []Plugin
+    registry  DistributedRegistry
+    discovery ServiceDiscovery
+}
+
+type DistributedRegistry interface {
+    RegisterNode(node *DistributedNode) error
+    DiscoverNodes() ([]*DistributedNode, error)
+    LoadBalance(pluginType string) (*DistributedNode, error)
+}
+
+// 負載均衡策略
+type LoadBalancer struct {
+    strategy LoadBalanceStrategy
+    nodes    []*DistributedNode
+}
+
+type LoadBalanceStrategy interface {
+    SelectNode(nodes []*DistributedNode, request Request) *DistributedNode
+}
+```
+
+**2. Plugin 分片策略**
+```yaml
+# compositions/distributed-monitoring.yaml
+composition:
+  name: "distributed-monitoring"
+  scaling:
+    strategy: "horizontal"
+    nodes: 3
+    distribution:
+      - node: "node-1"
+        plugins:
+          - community/importers/prometheus:
+              shard: "metrics-1"
+              range: "0-33%"
+      - node: "node-2"  
+        plugins:
+          - community/importers/prometheus:
+              shard: "metrics-2"
+              range: "34-66%"
+      - node: "node-3"
+        plugins:
+          - community/importers/prometheus:
+              shard: "metrics-3"
+              range: "67-100%"
+```
+
+### **效能監控與調優**
+
+**1. Plugin 效能指標**
+```go
+// pkg/platform/contracts/metrics.go
+type PluginMetrics struct {
+    Name           string        `json:"name"`
+    ExecutionTime  time.Duration `json:"execution_time"`
+    MemoryUsage    int64         `json:"memory_usage"`
+    CPUUsage       float64       `json:"cpu_usage"`
+    ErrorRate      float64       `json:"error_rate"`
+    Throughput     int64         `json:"throughput"`
+    LastExecution  time.Time     `json:"last_execution"`
+}
+
+type MetricsCollector interface {
+    RecordExecution(pluginName string, duration time.Duration)
+    RecordError(pluginName string, err error)
+    RecordThroughput(pluginName string, count int64)
+    GetMetrics(pluginName string) PluginMetrics
+}
+```
+
+**2. 自動調優機制**
+```go
+// internal/platform/runtime/auto_tuner.go
+type AutoTuner struct {
+    metrics     MetricsCollector
+    thresholds  TuningThresholds
+    actions     []TuningAction
+}
+
+type TuningThresholds struct {
+    MaxMemoryUsage    int64         `yaml:"max_memory_usage"`
+    MaxExecutionTime  time.Duration `yaml:"max_execution_time"`
+    MaxErrorRate      float64       `yaml:"max_error_rate"`
+    MinThroughput     int64         `yaml:"min_throughput"`
+}
+
+func (at *AutoTuner) OptimizePlugin(pluginName string) error {
+    metrics := at.metrics.GetMetrics(pluginName)
+    
+    if metrics.MemoryUsage > at.thresholds.MaxMemoryUsage {
+        return at.reduceMemoryUsage(pluginName)
+    }
+    
+    if metrics.ExecutionTime > at.thresholds.MaxExecutionTime {
+        return at.optimizeExecution(pluginName)
+    }
+    
+    return nil
+}
+```
+
+## 🔒 安全性與權限管理
+
+### **Plugin 安全隔離機制**
+
+**1. 沙箱執行環境**
+```go
+// pkg/platform/contracts/security.go
+type SecurityContext interface {
+    GetPermissions() []Permission
+    HasPermission(action string, resource string) bool
+    CreateSandbox() Sandbox
+}
+
+type Sandbox interface {
+    Execute(fn func() error) error
+    SetResourceLimits(limits ResourceLimits) error
+    GetViolations() []SecurityViolation
+}
+
+type ResourceLimits struct {
+    MaxMemory     int64         `yaml:"max_memory"`
+    MaxCPU        float64       `yaml:"max_cpu"`
+    MaxFileSize   int64         `yaml:"max_file_size"`
+    MaxNetworkIO  int64         `yaml:"max_network_io"`
+    AllowedPaths  []string      `yaml:"allowed_paths"`
+    BlockedHosts  []string      `yaml:"blocked_hosts"`
+    Timeout       time.Duration `yaml:"timeout"`
+}
+```
+
+**2. Plugin 權限模型**
+```go
+// pkg/shared/security/permissions.go
+type Permission struct {
+    Action   string   `json:"action"`   // read, write, execute, network
+    Resource string   `json:"resource"` // file://, http://, plugin://
+    Scope    []string `json:"scope"`    // 具體資源範圍
+}
+
+type PluginSecurityPolicy struct {
+    PluginName    string       `yaml:"plugin_name"`
+    Permissions   []Permission `yaml:"permissions"`
+    Restrictions  []string     `yaml:"restrictions"`
+    TrustLevel    TrustLevel   `yaml:"trust_level"`
+}
+
+type TrustLevel string
+
+const (
+    TrustLevelCore      TrustLevel = "core"      // 核心插件，完全信任
+    TrustLevelVerified  TrustLevel = "verified"  // 已驗證插件，部分信任
+    TrustLevelCommunity TrustLevel = "community" // 社群插件，限制信任
+    TrustLevelCustom    TrustLevel = "custom"    // 自訂插件，最小信任
+)
+```
+
+**3. 權限檢查機制**
+```go
+// internal/platform/security/permission_checker.go
+type PermissionChecker struct {
+    policies map[string]PluginSecurityPolicy
+    auditor  SecurityAuditor
+}
+
+func (pc *PermissionChecker) CheckPermission(pluginName, action, resource string) error {
+    policy, exists := pc.policies[pluginName]
+    if !exists {
+        return fmt.Errorf("no security policy for plugin %s", pluginName)
+    }
+    
+    for _, permission := range policy.Permissions {
+        if permission.Action == action && pc.matchResource(permission.Resource, resource) {
+            pc.auditor.LogAccess(pluginName, action, resource, "allowed")
+            return nil
+        }
+    }
+    
+    pc.auditor.LogAccess(pluginName, action, resource, "denied")
+    return fmt.Errorf("permission denied: %s cannot %s on %s", pluginName, action, resource)
+}
+```
+
+### **敏感資料保護**
+
+**1. 配置加密機制**
+```go
+// pkg/shared/security/encryption.go
+type ConfigEncryption interface {
+    Encrypt(plaintext []byte) ([]byte, error)
+    Decrypt(ciphertext []byte) ([]byte, error)
+    EncryptConfig(config map[string]any) (map[string]any, error)
+    DecryptConfig(config map[string]any) (map[string]any, error)
+}
+
+type SecureConfigLoader struct {
+    encryption ConfigEncryption
+    keyManager KeyManager
+}
+
+func (scl *SecureConfigLoader) LoadPluginConfig(pluginName string) (map[string]any, error) {
+    encryptedConfig, err := scl.loadRawConfig(pluginName)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 解密敏感欄位
+    return scl.encryption.DecryptConfig(encryptedConfig)
+}
+```
+
+**2. 密鑰管理**
+```go
+// pkg/shared/security/key_manager.go
+type KeyManager interface {
+    GetKey(keyID string) ([]byte, error)
+    RotateKey(keyID string) error
+    CreateKey(keyID string) ([]byte, error)
+    DeleteKey(keyID string) error
+}
+
+type VaultKeyManager struct {
+    vaultClient VaultClient
+    keyPrefix   string
+}
+
+func (vkm *VaultKeyManager) GetKey(keyID string) ([]byte, error) {
+    secret, err := vkm.vaultClient.Read(vkm.keyPrefix + keyID)
+    if err != nil {
+        return nil, err
+    }
+    
+    key, ok := secret.Data["key"].(string)
+    if !ok {
+        return nil, fmt.Errorf("invalid key format")
+    }
+    
+    return base64.StdEncoding.DecodeString(key)
+}
+```
+
+### **安全審計與監控**
+
+**1. 安全事件記錄**
+```go
+// pkg/shared/security/audit.go
+type SecurityEvent struct {
+    ID        string            `json:"id"`
+    Timestamp time.Time         `json:"timestamp"`
+    PluginName string           `json:"plugin_name"`
+    Action    string            `json:"action"`
+    Resource  string            `json:"resource"`
+    Result    string            `json:"result"` // allowed, denied, error
+    UserID    string            `json:"user_id,omitempty"`
+    IP        string            `json:"ip,omitempty"`
+    Details   map[string]string `json:"details"`
+    Severity  string            `json:"severity"`
+}
+
+type SecurityAuditor interface {
+    LogAccess(pluginName, action, resource, result string)
+    LogAuthentication(userID, method, result string)
+    LogConfigChange(pluginName, field, oldValue, newValue string)
+    GetSecurityEvents(filter SecurityEventFilter) ([]SecurityEvent, error)
+}
+```
+
+**2. 異常行為檢測**
+```go
+// internal/platform/security/anomaly_detector.go
+type AnomalyDetector struct {
+    patterns    []BehaviorPattern
+    thresholds  AnomalyThresholds
+    alerter     SecurityAlerter
+}
+
+type BehaviorPattern struct {
+    PluginName      string        `json:"plugin_name"`
+    NormalActions   []string      `json:"normal_actions"`
+    MaxFrequency    int           `json:"max_frequency"`
+    TimeWindow      time.Duration `json:"time_window"`
+    SuspiciousActions []string    `json:"suspicious_actions"`
+}
+
+func (ad *AnomalyDetector) DetectAnomaly(event SecurityEvent) error {
+    pattern := ad.getPattern(event.PluginName)
+    if pattern == nil {
+        return nil
+    }
+    
+    // 檢查頻率異常
+    if ad.isFrequencyAnomaly(event, pattern) {
+        return ad.alerter.SendAlert("frequency_anomaly", event)
+    }
+    
+    // 檢查可疑行為
+    if ad.isSuspiciousAction(event, pattern) {
+        return ad.alerter.SendAlert("suspicious_action", event)
+    }
+    
+    return nil
+}
+```
+
+### **Plugin 簽名與驗證**
+
+**1. Plugin 完整性驗證**
+```go
+// pkg/platform/security/plugin_verifier.go
+type PluginVerifier interface {
+    VerifySignature(pluginPath string) error
+    VerifyChecksum(pluginPath string, expectedChecksum string) error
+    VerifyTrustChain(pluginPath string) error
+}
+
+type DigitalSignatureVerifier struct {
+    publicKeys map[string]*rsa.PublicKey
+    trustStore TrustStore
+}
+
+func (dsv *DigitalSignatureVerifier) VerifySignature(pluginPath string) error {
+    // 1. 讀取 plugin 檔案
+    pluginData, err := os.ReadFile(pluginPath)
+    if err != nil {
+        return err
+    }
+    
+    // 2. 讀取簽名檔案
+    signaturePath := pluginPath + ".sig"
+    signature, err := os.ReadFile(signaturePath)
+    if err != nil {
+        return err
+    }
+    
+    // 3. 驗證簽名
+    return dsv.verifyRSASignature(pluginData, signature)
+}
+```
+
+**2. Plugin 來源驗證**
+```yaml
+# config/security.yaml
+plugin_security:
+  trust_stores:
+    - name: "official"
+      type: "certificate"
+      path: "/etc/detectviz/certs/official.pem"
+      trust_level: "core"
+    - name: "community"
+      type: "pgp"
+      keyring: "/etc/detectviz/keys/community.gpg"
+      trust_level: "community"
+  
+  verification_rules:
+    - plugin_pattern: "plugins/core/*"
+      required_trust_level: "core"
+      require_signature: true
+    - plugin_pattern: "plugins/community/*"
+      required_trust_level: "community"
+      require_signature: true
+      allow_self_signed: false
+```
+
+## 🔄 架構演進路徑
 
