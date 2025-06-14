@@ -82,6 +82,7 @@ Detectviz 採用清楚且語意一致的命名規則來區分 interface（抽象
   - 後綴：`DefaultAlertEvaluator`, `CronScheduler`, `PushgatewayMetricWriter`
 - 若為多介面組合的實作，可保留語意一致性，但避免冗長命名
 - 建議 interface 檔案命名為：`<功能名>.go`（如 `logger.go`, `scheduler.go`）
+- 所有 interface 定義應集中於 `pkg/platform/contracts/`，並維持穩定與可測試性。
 - 建議 adapter 檔案命名為：`<類型>_adapter.go` 或 `<具體功能>.go`（如 `zap_adapter.go`, `cron_adapter.go`）
 
 ### 命名範例
@@ -104,7 +105,7 @@ Detectviz 採用清楚且語意一致的命名規則來區分 interface（抽象
 
 ### Package 命名慣例補充
 
-- 為避免與 `pkg/ifaces/metric` 等核心介面衝突，建議 adapter 的實作包使用 `package xxxadapter` 命名，例如 `metricsadapter`, `loggeradapter`
+- 為避免與 `pkg/platform/contracts/metric` 等核心介面衝突，建議 adapter 的實作包使用 `package xxxadapter` 命名，例如 `metricsadapter`, `loggeradapter`
 - 這有助於區分：
   - 核心抽象層（如 `metric.Writer`、`logger.Logger`）
   - 對應的實作包（如 `internal/adapters/metrics`）
@@ -115,7 +116,7 @@ import metricsadapter "detectviz/internal/adapters/metrics"
 ```
 
 - 適用情境：
-  - 該模組有清楚對應 interface（如 `pkg/ifaces/metric.Writer`）
+  - 該模組有清楚對應 interface（如 `pkg/platform/contracts/metric.Writer`）
   - 有多種實作可能（如 `InfluxWriter`, `PrometheusWriter`）
 
 ---

@@ -14,6 +14,8 @@
 | **Mock 實作** | 驗證呼叫方法/次數/參數是否正確 | `/internal/test/mocks/` 或 `/pkg/mocks/` | `mock_scheduler.go`（mockery 產出） |
 | **共用測試工具** | 建立可複用 logger、clock、context、資料構造等 | `/internal/test/testutil/` | `test_logger.go`、`assert_logger.go`、`fake_clock.go` |
 
+備註：所有 interface 定義皆應集中於 `pkg/platform/contracts/`，原有 `pkg/ifaces/` 已廢除。
+
 ### 統整建議
 
 - 模組行為測試 → 模組內
@@ -40,10 +42,11 @@ detectviz/
 │   │   └── logger/
 │   │       ├── zap_adapter.go
 │   │       └── zap_adapter_test.go    # 單元測試：與 adapter 同層
-│   ├── registry/
-│   │   └── scheduler/
-│   │       ├── registry.go
-│   │       └── registry_test.go       # 單元測試（可與 adapter 區隔）
+│   ├── platform/
+│   │   └── registry/
+│   │       └── scheduler/
+│   │           ├── registry.go
+│   │           └── registry_test.go       # 單元測試（可與 adapter 區隔）
 │   ├── test/
 │   │   ├── fakes/
 │   │   │   └── fake_notifier.go
@@ -59,7 +62,8 @@ detectviz/
 │   ├── config/
 │   │   ├── default.go
 │   │   └── default_test.go
-│   ├── ifaces/
+│   ├── platform/
+│   │   └── contracts/
 │   └── mocks/       # mockery 自動產生可選集中放這
 ```
 

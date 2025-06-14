@@ -16,8 +16,6 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-docs-tmp
-docs-tmp/*.md
 
 # Go workspace file
 go.work
@@ -29,5 +27,10 @@ go.work.sum
 # custom
 .vscode
 .DS_Store
-todo-history.md
-todo-keep.md
+docs/deprecated-architecture
+docs/deprecated-detectviz-sourcecode
+docs/deprecated-interfaces
+docs/reference-sourcecode
+tmp
+docs-tmp
+docs-tmp/*.md

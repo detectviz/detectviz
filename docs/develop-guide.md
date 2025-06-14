@@ -1,7 +1,3 @@
-
-
-## 模組邊界清晰
-
 # 開發者導引（Develop Guide）
 
 本文件提供 detectviz 開發者進行模組實作、擴充、測試時的設計參考與作業流程說明，幫助快速理解整體邏輯與模組邊界。
@@ -40,8 +36,8 @@ graph LR
     end
     
     subgraph "介面層"
-        I1["pkg/ifaces/alert"]
-        I2["pkg/ifaces/notifier"]
+        I1["pkg/platform/contracts/alert"]
+        I2["pkg/platform/contracts/notifier"]
     end
     
     A1 --> S1
@@ -82,19 +78,18 @@ graph LR
 
 - handler 分支版本：`v1/`, `v1beta1/` 路徑區分
 - interface 檔案：以業務意圖命名，例如 `AlertNotifier`, `RuleEvaluator`
-- plugin 命名：註冊名稱需唯一，例如 `"auth.keycloak"`, `"notifier.slack"`
+- plugin 命名：註冊名稱需唯一，例如 `"importers.prometheus"`, `"notifier.slack"`
 
 ---
 
-## 應用場景開發範例
+## 插件路徑與分類說明
 
-| 類型 | 實作模組 |
-|------|----------|
-| 告警平台 | `services/alert`, `store/alertlog`, `plugins/notifier` |
-| 運維報表 | `handlers/report`, `services/report`, `store/logfile` |
-| 指標分析 | `handlers/metrics`, `services/evaluator`, `store/influxdb` |
-| 多租戶登入 | `auth/strategy`, `plugins/auth/keycloak` |
-| CLI 匯入工具 | `pkg/cmd/rule/apply.go`, `pkg/config`, `pkg/validation` |
+所有 plugins 依照功能與啟用層級分類為：
+
+- 核心組件：`plugins/core/`（平台啟動即需）
+- 社群擴充：`plugins/community/`（依 composition 載入）
+  - `importers/`, `exporters/`, `integrations/`
+- 開發工具：`plugins/tools/`（僅供除錯開發使用）
 
 ---
 
@@ -104,5 +99,3 @@ graph LR
 - 文件生成：支援 mermaid, markdown lint
 - 測試框架：`testing`, `testify`, `httptest`
 - Interface Style：使用明確動詞（如 `Apply`, `Evaluate`, `Resolve`）
-
----
