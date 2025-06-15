@@ -81,6 +81,291 @@ Detectviz 採用 Plugin 為核心的可擴充架構，設計重點如下：
 - Plugin 注入：支援前端 plugin 載入自定頁面與元件
 - iframe 整合：Grafana iframe（支援 var 組織切換、token 傳遞）
 
+### WebUIPlugin 註冊生命週期
+
+DetectViz 平台提供完整的 WebUI 插件註冊與生命週期管理機制：
+
+#### 1. 插件註冊流程
+
+**註冊判斷機制**：
+```go
+// 平台啟動時的插件註冊流程
+func (p *Platform) registerPlugin(plugin contracts.Plugin) error {
+    // 1. 標準插件註冊
+    if err := p.registry.Register(plugin); err != nil {
+        return fmt.Errorf("failed to register plugin %s: %w", plugin.Name(), err)
+    }
+    
+    // 2. 判斷是否為 WebUIPlugin
+    if webPlugin, ok := plugin.(contracts.WebUIPlugin); ok {
+        // 3. 執行 WebUI 特定註冊
+        return p.registerWebUIPlugin(webPlugin)
+    }
+    
+    return nil
+}
+```
+
+**WebUI 註冊方法**：
+```go
+// WebUI 插件專用註冊流程
+func (p *Platform) registerWebUIPlugin(webPlugin contracts.WebUIPlugin) error {
+    // 1. 註冊路由
+    if err := webPlugin.RegisterRoutes(p.webRouter); err != nil {
+        return fmt.Errorf("failed to register routes: %w", err)
+    }
+    
+    // 2. 註冊導覽節點
+    if err := webPlugin.RegisterNavNodes(p.navTreeBuilder); err != nil {
+        return fmt.Errorf("failed to register nav nodes: %w", err)
+    }
+    
+    // 3. 註冊 UI 組件
+    if err := webPlugin.RegisterComponents(p.componentRegistry); err != nil {
+        return fmt.Errorf("failed to register components: %w", err)
+    }
+    
+    // 4. 添加到 WebUI 插件列表
+    p.webUIPlugins = append(p.webUIPlugins, webPlugin)
+    
+    return nil
+}
+```
+
+#### 2. 使用時機與場景
+
+**適用場景**：
+- **管理介面插件**：提供插件配置和管理頁面
+- **監控面板插件**：展示系統狀態和指標
+- **工具頁面插件**：提供實用工具和功能
+- **整合介面插件**：與第三方服務的整合界面
+
+**使用時機**：
+```go
+// 插件需要提供 Web 介面時實作 WebUIPlugin
+type MyPlugin struct {
+    // 基本插件屬性
+    name     string
+    config   MyPluginConfig
+    registry contracts.Registry
+}
+
+// 實作 WebUIPlugin 介面
+func (p *MyPlugin) RegisterRoutes(router contracts.WebRouter) error {
+    // 註冊插件專用路由
+    router.GET("/my-plugin", p.handleMainPage)
+    router.GET("/my-plugin/api/status", p.handleStatusAPI)
+    return nil
+}
+
+func (p *MyPlugin) RegisterNavNodes(navtree contracts.NavTreeBuilder) error {
+    // 添加導覽選單項目
+    node := contracts.NavNode{
+        ID:    "my-plugin",
+        Title: "我的插件",
+        URL:   "/my-plugin",
+        Icon:  "fas fa-cog",
+        Order: 100,
+    }
+    return navtree.AddNode("my-plugin", node)
+}
+
+func (p *MyPlugin) RegisterComponents(registry contracts.ComponentRegistry) error {
+    // 註冊 UI 組件和資源
+    return registry.RegisterAsset("my-plugin-css", contracts.Asset{
+        Type: "css",
+        Path: "/assets/my-plugin.css",
+    })
+}
+```
+
+#### 3. 典型函式實作範例
+
+**完整插件範例**：
+```go
+// 系統狀態插件實作範例
+type SystemStatusPlugin struct {
+    name     string
+    enabled  bool
+    registry contracts.Registry
+    logger   contracts.Logger
+}
+
+// 基本插件介面實作
+func (p *SystemStatusPlugin) Name() string { return p.name }
+func (p *SystemStatusPlugin) Enabled() bool { return p.enabled }
+
+func (p *SystemStatusPlugin) Init(config any) error {
+    // 插件初始化邏輯
+    p.logger.Info("Initializing system status plugin")
+    return nil
+}
+
+// WebUIPlugin 介面實作
+func (p *SystemStatusPlugin) RegisterRoutes(router contracts.WebRouter) error {
+    // 主頁面路由
+    router.GET("/system-status", p.handleStatusPage)
+    
+    // API 路由群組
+    apiGroup := router.Group("/api/system-status")
+    apiGroup.GET("/metrics", p.handleMetricsAPI)
+    apiGroup.GET("/health", p.handleHealthAPI)
+    
+    return nil
+}
+
+func (p *SystemStatusPlugin) RegisterNavNodes(navtree contracts.NavTreeBuilder) error {
+    // 主導覽節點
+    mainNode := contracts.NavNode{
+        ID:         "system-status",
+        Title:      "系統狀態",
+        Icon:       "fas fa-server",
+        URL:        "/system-status",
+        Permission: "system.view",
+        Order:      10,
+        Visible:    true,
+        Enabled:    true,
+    }
+    
+    if err := navtree.AddNode("system-status", mainNode); err != nil {
+        return err
+    }
+    
+    // 子節點
+    subNodes := []struct {
+        id   string
+        node contracts.NavNode
+    }{
+        {
+            id: "system-metrics",
+            node: contracts.NavNode{
+                ID:    "system-metrics",
+                Title: "系統指標",
+                URL:   "/system-status/metrics",
+                Order: 1,
+            },
+        },
+        {
+            id: "system-health",
+            node: contracts.NavNode{
+                ID:    "system-health",
+                Title: "健康檢查",
+                URL:   "/system-status/health",
+                Order: 2,
+            },
+        },
+    }
+    
+    for _, sub := range subNodes {
+        if err := navtree.AddChildNode("system-status", sub.id, sub.node); err != nil {
+            return err
+        }
+    }
+    
+    return nil
+}
+
+func (p *SystemStatusPlugin) RegisterComponents(registry contracts.ComponentRegistry) error {
+    // 註冊模板片段
+    if err := registry.RegisterPartial("status-card", "/templates/status-card.html"); err != nil {
+        return err
+    }
+    
+    // 註冊靜態資源
+    assets := []contracts.Asset{
+        {
+            Name:    "system-status-css",
+            Type:    "css",
+            Path:    "/assets/system-status.css",
+            Version: "1.0.0",
+        },
+        {
+            Name:    "system-status-js",
+            Type:    "js",
+            Path:    "/assets/system-status.js",
+            Version: "1.0.0",
+        },
+    }
+    
+    for _, asset := range assets {
+        if err := registry.RegisterAsset(asset.Name, asset); err != nil {
+            return err
+        }
+    }
+    
+    return nil
+}
+
+// HTTP 處理器實作
+func (p *SystemStatusPlugin) handleStatusPage(ctx contracts.WebContext) error {
+    data := map[string]any{
+        "title":   "系統狀態",
+        "metrics": p.getSystemMetrics(),
+        "health":  p.getHealthStatus(),
+    }
+    
+    return ctx.Render("system-status.html", data)
+}
+
+func (p *SystemStatusPlugin) handleMetricsAPI(ctx contracts.WebContext) error {
+    metrics := p.getSystemMetrics()
+    return ctx.JSON(200, metrics)
+}
+
+func (p *SystemStatusPlugin) handleHealthAPI(ctx contracts.WebContext) error {
+    health := p.getHealthStatus()
+    return ctx.JSON(200, health)
+}
+```
+
+#### 4. 註冊順序與依賴
+
+**註冊順序保證**：
+```go
+// 平台確保 WebUI 註冊的正確順序
+func (p *Platform) initializeWebUI() error {
+    // 1. 初始化 Web 路由器
+    p.webRouter = NewWebRouter(p.echo)
+    
+    // 2. 初始化導覽樹建構器
+    p.navTreeBuilder = NewNavTreeBuilder()
+    
+    // 3. 初始化組件註冊表
+    p.componentRegistry = NewComponentRegistry()
+    
+    // 4. 註冊所有 WebUI 插件
+    for _, plugin := range p.getWebUIPlugins() {
+        if err := p.registerWebUIPlugin(plugin); err != nil {
+            return err
+        }
+    }
+    
+    // 5. 建構最終的導覽樹
+    p.navTree = p.navTreeBuilder.BuildTree()
+    
+    return nil
+}
+```
+
+**依賴處理**：
+```go
+// 處理插件間的依賴關係
+func (p *Platform) resolveWebUIDependencies() error {
+    // 根據插件依賴順序排序
+    sortedPlugins := p.sortPluginsByDependencies(p.webUIPlugins)
+    
+    // 按順序註冊
+    for _, plugin := range sortedPlugins {
+        if err := p.registerWebUIPlugin(plugin); err != nil {
+            return fmt.Errorf("failed to register plugin %s: %w", 
+                plugin.Name(), err)
+        }
+    }
+    
+    return nil
+}
+```
+
 ### Scaffold 設計示意
 
 ```text
@@ -102,6 +387,258 @@ DetectViz 整合 **Grafana Alloy** 作為統一的可觀測性代理：
 - **多語言 SDK**：提供 Go、Python 等語言的整合範例
 - **系統服務化**：支援 systemd 等系統服務管理
 - **自動化部署**：透過 `internal/services/observability/alloy_manager.go` 管理
+
+#### Alloy DevKit 整合架構
+
+DetectViz 透過以下機制實現與 Alloy DevKit 的深度整合：
+
+##### 1. 自動配置生成
+
+**觸發條件**：
+- 插件註冊時自動檢測 ObservabilityPlugin 類型
+- 配置檔案變更時重新生成 alloy-config.river
+- 系統啟動時初始化 Alloy 代理配置
+
+**Plugin 對應路徑**：
+```go
+// 插件配置映射至 Alloy 組件
+plugins/community/integrations/observability/sdk-wrapper/ 
+    → alloy-config.river: otelcol.receiver.otlp
+    
+plugins/community/exporters/prometheus/
+    → alloy-config.river: prometheus.exporter
+    
+plugins/community/importers/telegraf/
+    → alloy-config.river: prometheus.scrape
+```
+
+**資料來源結構**：
+```go
+type AlloyConfigGenerator struct {
+    // 插件註冊表
+    registry contracts.Registry
+    
+    // 配置模板
+    templates map[string]*template.Template
+    
+    // 輸出路徑
+    configPath string
+}
+
+// 自動生成配置的資料結構
+type AlloyConfig struct {
+    // OTLP 接收器配置
+    OTLPReceivers []OTLPReceiverConfig `river:"otelcol.receiver.otlp"`
+    
+    // Prometheus 匯出器配置
+    PrometheusExporters []PrometheusExporterConfig `river:"prometheus.exporter"`
+    
+    // 日誌處理器配置
+    LogProcessors []LogProcessorConfig `river:"loki.process"`
+    
+    // 追蹤處理器配置
+    TraceProcessors []TraceProcessorConfig `river:"otelcol.processor.batch"`
+}
+```
+
+##### 2. Plugin 自動啟用機制
+
+**啟用流程**：
+```go
+// 1. 插件註冊階段
+func (am *AlloyManager) RegisterPlugin(plugin contracts.Plugin) error {
+    // 檢查是否為觀測性插件
+    if obsPlugin, ok := plugin.(contracts.ObservabilityPlugin); ok {
+        // 註冊至 Alloy 配置生成器
+        am.configGenerator.AddPlugin(obsPlugin)
+        
+        // 生成對應的 River 配置
+        return am.generateAlloyConfig()
+    }
+    return nil
+}
+
+// 2. 配置生成階段
+func (am *AlloyManager) generateAlloyConfig() error {
+    // 收集所有觀測性插件配置
+    configs := am.collectPluginConfigs()
+    
+    // 生成 alloy-config.river
+    riverConfig := am.generateRiverConfig(configs)
+    
+    // 寫入配置檔案
+    return am.writeConfigFile(riverConfig)
+}
+
+// 3. Alloy 代理啟動
+func (am *AlloyManager) StartAlloyAgent() error {
+    // 啟動 Alloy 代理程序
+    cmd := exec.Command("alloy", "run", am.configPath)
+    return cmd.Start()
+}
+```
+
+##### 3. 配置模板系統
+
+**River 配置模板範例**：
+```river
+// OTLP 接收器模板
+otelcol.receiver.otlp "detectviz" {
+  grpc {
+    endpoint = "{{ .OTLP.GRPC.Endpoint }}"
+  }
+  
+  http {
+    endpoint = "{{ .OTLP.HTTP.Endpoint }}"
+  }
+  
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Prometheus 匯出器模板
+prometheus.exporter.detectviz "default" {
+  targets = [
+    {{ range .Prometheus.Targets }}
+    {
+      __address__ = "{{ .Address }}"
+      job         = "{{ .Job }}"
+    },
+    {{ end }}
+  ]
+}
+
+// 日誌處理器模板
+loki.process "detectviz_logs" {
+  forward_to = [loki.write.default.receiver]
+  
+  stage.json {
+    expressions = {
+      level     = "level"
+      timestamp = "timestamp"
+      message   = "message"
+      trace_id  = "trace_id"
+    }
+  }
+}
+```
+
+##### 4. 動態配置更新
+
+**熱重載機制**：
+```go
+// 配置變更監聽
+func (am *AlloyManager) WatchConfigChanges() {
+    watcher, _ := fsnotify.NewWatcher()
+    watcher.Add(am.configPath)
+    
+    for {
+        select {
+        case event := <-watcher.Events:
+            if event.Op&fsnotify.Write == fsnotify.Write {
+                // 重新載入 Alloy 配置
+                am.reloadAlloyConfig()
+            }
+        }
+    }
+}
+
+// Alloy 配置重載
+func (am *AlloyManager) reloadAlloyConfig() error {
+    // 發送 SIGHUP 信號給 Alloy 程序
+    return am.alloyProcess.Signal(syscall.SIGHUP)
+}
+```
+
+##### 5. 健康檢查整合
+
+**Alloy 代理健康檢查**：
+```go
+func (am *AlloyManager) CheckHealth(ctx context.Context) contracts.HealthStatus {
+    // 檢查 Alloy 程序狀態
+    if !am.isAlloyRunning() {
+        return contracts.HealthStatus{
+            Status:  "unhealthy",
+            Message: "Alloy agent is not running",
+        }
+    }
+    
+    // 檢查 OTLP 端點連通性
+    if !am.checkOTLPEndpoint() {
+        return contracts.HealthStatus{
+            Status:  "degraded",
+            Message: "OTLP endpoint is not accessible",
+        }
+    }
+    
+    return contracts.HealthStatus{
+        Status:  "healthy",
+        Message: "Alloy agent is running normally",
+    }
+}
+```
+
+#### 使用範例
+
+**插件配置**：
+```yaml
+# config.yaml
+observability:
+  enabled: true
+  alloy:
+    config_path: "/etc/alloy/config.river"
+    reload_signal: "SIGHUP"
+    health_check_interval: "30s"
+  
+  plugins:
+    - name: "otel-sdk-wrapper"
+      enabled: true
+      config:
+        otlp:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+```
+
+**自動生成的 alloy-config.river**：
+```river
+// 由 DetectViz 自動生成
+// 生成時間: 2024-01-01T00:00:00Z
+
+otelcol.receiver.otlp "detectviz" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+    logs    = [otelcol.exporter.loki.default.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "http://tempo:4317"
+  }
+}
+
+otelcol.exporter.prometheus "default" {
+  endpoint = "http://prometheus:9090/api/v1/write"
+}
+
+otelcol.exporter.loki "default" {
+  endpoint = "http://loki:3100/loki/api/v1/push"
+}
+```
 
 ---
 
