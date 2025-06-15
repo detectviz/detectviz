@@ -59,14 +59,15 @@ Detectviz 採用 Plugin 為核心的可擴充架構，設計重點如下：
 - 設定解析：mapstructure（cfg 解碼為 struct，配合 plugin config 使用）
 - Plugin 管理：Registry、Composition 組合、Lifecycle 控制器
 - 任務排程與佇列：Redis Streams、Cron 排程器（預留）
-- 日誌整合：otelzap（Zap logger with OTEL context，可與 logrus 並存使用）
-- 備援日誌：logrus（相容早期套件或 CLI log 輸出）
+- 日誌整合：otelzap（Zap logger with OTEL context，可結合 lumberjack 實作 log rotation）
+  - 支援 log level、json/text 格式、trace context、log sink 組合
+  - 建議全系統統一使用 otelzap 作為唯一 logger
+  - 若需 log rotate，建議結合 lumberjack 套件（如 app.log 輪替、壓縮、保留）
 - OTEL 資源註解：`go.opentelemetry.io/otel/sdk/resource`（提供 org, host, platform tag）
 - Observability：OTEL SDK（trace, log, metric），整合 Prometheus、Tempo、Loki、Alloy DevKit
 - OTEL 導入元件：
   - `otelecho`：Echo middleware trace wrapper（主要 HTTP entrypoint）
   - `opentelemetry-net-http`：標準 http.Client 外部呼叫追蹤
-  - `opentelemetry-logrus`：logrus 日誌支援 trace context
   - `opentelemetry-database-sql`：若使用 `database/sql` 操作資料庫，支援 SQL trace
   - `opentelemetry-gorm`：若 plugin 使用 GORM，可導入 DB ORM trace
   - `opentelemetry-go-contrib/instrumentation/google.golang.org/grpc/otelgrpc`：gRPC interceptor，支援 trace context 傳遞與 metrics 自動導出
@@ -205,3 +206,32 @@ func (p *PrometheusExporter) Export(data any) error {
 - `monitoring-stack/`：監控堆疊組合
 - `observability-platform/`：完整可觀測性平台組合
 - `alloy-devkit/`：Alloy 可觀測性開發套件
+
+---
+
+## Logger
+
+- [ ] 導入全域 Logger 管理模組
+  - 路徑建議：`pkg/shared/log/logger.go`
+  - 功能：
+    - 採用 `otelzap` 為唯一 logger，統一平台日誌行為
+    - 搭配 lumberjack 支援 log rotation（大小、備份、壓縮）
+    - 可透過 `log.L(ctx)` 取得帶有 trace context 的 logger 實例
+    - 提供 `log.SetGlobalLogger()` 於 scaffold 啟動時設置預設 logger
+
+- [ ] 擴充 LoggingConfig 結構
+  - 路徑建議：`pkg/config/schema/types.go`
+  - 說明：
+    - 新增 `Type`, `OTEL`, `FileConfig` 等欄位
+    - 支援 log 輸出選項（stdout/file）、格式（json/text）
+
+- [ ] 升級 plugin 與 scaffold 中所有 `fmt.Printf` 為 `log.L(ctx).Info/Debug(...)`
+  - 範圍包含：
+    - lifecycle.go
+    - prometheus, jwt, influxdb 等 plugin
+    - scaffold_test 與 webui_test 中的 log 輸出
+
+- [ ] 撰寫日誌初始化與整合測試
+  - 確認 logger 能從 `LoggingConfig` 正確初始化
+  - 驗證 trace ID 是否成功注入至 log 訊息中
+  - 測試檔案位置建議：`internal/test/integration/logging_test.go`

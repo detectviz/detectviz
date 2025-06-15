@@ -1,11 +1,13 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
 
 	"detectviz/pkg/platform/contracts"
+	"detectviz/pkg/shared/log"
 )
 
 // Router implements WebRouter interface for plugin route registration.
@@ -131,32 +133,42 @@ func (rg *RouterGroup) Group(prefix string) contracts.WebRouter {
 // Plugin management methods
 // zh: 插件管理方法
 
-// RegisterWebUIPlugin registers a WebUI plugin and calls its registration methods.
-// zh: RegisterWebUIPlugin 註冊 WebUI 插件並呼叫其註冊方法。
+// RegisterWebUIPlugin registers a WebUIPlugin with the router.
+// zh: RegisterWebUIPlugin 註冊 WebUIPlugin 到路由器。
 func (r *Router) RegisterWebUIPlugin(name string, plugin contracts.WebUIPlugin) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	if _, exists := r.webUIPlugins[name]; exists {
-		return fmt.Errorf("WebUI plugin %s already registered", name)
+		ctx := context.Background()
+		log.L(ctx).Warn("WebUI plugin already registered, overwriting", "plugin", name)
 	}
+
+	r.webUIPlugins[name] = plugin
 
 	// Register routes
 	if err := plugin.RegisterRoutes(r); err != nil {
-		return fmt.Errorf("failed to register routes for plugin %s: %w", name, err)
+		ctx := context.Background()
+		log.L(ctx).Error("Failed to register WebUI plugin", "plugin", name, "error", err)
+		return err
 	}
 
-	// Register navigation nodes
+	// Register navigation tree items
 	if err := plugin.RegisterNavNodes(r.navTree); err != nil {
-		return fmt.Errorf("failed to register nav nodes for plugin %s: %w", name, err)
+		ctx := context.Background()
+		log.L(ctx).Error("Failed to register navigation for WebUI plugin", "plugin", name, "error", err)
+		return err
 	}
 
 	// Register components
 	if err := plugin.RegisterComponents(r.componentReg); err != nil {
-		return fmt.Errorf("failed to register components for plugin %s: %w", name, err)
+		ctx := context.Background()
+		log.L(ctx).Error("Failed to register components for WebUI plugin", "plugin", name, "error", err)
+		return err
 	}
 
-	r.webUIPlugins[name] = plugin
+	ctx := context.Background()
+	log.L(ctx).Info("Registered WebUI plugin", "plugin", name)
 	return nil
 }
 

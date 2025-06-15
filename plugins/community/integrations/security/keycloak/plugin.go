@@ -2,6 +2,7 @@ package keycloak
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"detectviz/pkg/platform/contracts"
+	"detectviz/pkg/shared/log"
 )
 
 // KeycloakPlugin provides Keycloak-based authentication.
@@ -201,19 +203,30 @@ func (p *KeycloakPlugin) Description() string {
 	return p.description
 }
 
-// Init initializes the plugin.
-// zh: Init 初始化插件。
+// Init initializes the Keycloak plugin with the provided configuration.
+// zh: Init 使用提供的配置初始化 Keycloak 插件。
 func (p *KeycloakPlugin) Init(config any) error {
-	if p.initialized {
-		return nil
+	// Parse configuration
+	if err := parseKeycloakConfig(config, p.config); err != nil {
+		return fmt.Errorf("failed to parse Keycloak config: %w", err)
 	}
 
-	// Test connection to validate configuration
-	if err := p.testConnection(); err != nil {
-		return fmt.Errorf("failed to validate Keycloak connection: %w", err)
+	// Configure HTTP client
+	transport := &http.Transport{}
+	if p.config.InsecureTLS {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	p.httpClient = &http.Client{
+		Transport: transport,
+		Timeout:   time.Duration(p.config.Timeout) * time.Second,
 	}
 
 	p.initialized = true
+
+	ctx := context.Background()
+	log.L(ctx).Info("Keycloak plugin registered", "realm", p.config.Realm)
+
 	return nil
 }
 
@@ -235,28 +248,29 @@ func (p *KeycloakPlugin) OnRegister() error {
 	return nil
 }
 
-// OnStart is called when the plugin is started.
-// zh: OnStart 在插件啟動時被呼叫。
+// OnStart is called when the plugin lifecycle starts.
+// zh: OnStart 在插件生命週期開始時被調用。
 func (p *KeycloakPlugin) OnStart() error {
 	if !p.initialized {
 		return fmt.Errorf("plugin not initialized")
 	}
 
-	// Test connection to Keycloak
-	if err := p.testConnection(); err != nil {
-		return fmt.Errorf("failed to connect to Keycloak: %w", err)
-	}
-
 	p.started = true
-	fmt.Printf("Keycloak plugin started successfully\n")
+
+	ctx := context.Background()
+	log.L(ctx).Info("Keycloak plugin started successfully")
+
 	return nil
 }
 
-// OnStop is called when the plugin is stopped.
-// zh: OnStop 在插件停止時被呼叫。
+// OnStop is called when the plugin lifecycle stops.
+// zh: OnStop 在插件生命週期停止時被調用。
 func (p *KeycloakPlugin) OnStop() error {
 	p.started = false
-	fmt.Printf("Keycloak plugin stopped\n")
+
+	ctx := context.Background()
+	log.L(ctx).Info("Keycloak plugin stopped")
+
 	return nil
 }
 

@@ -355,7 +355,7 @@ detectviz/
 
 ```
 
-## 🏗️ 框架穩定性分析
+## 框架穩定性分析
 
 ### **框架穩定層(Core Framework)**
 這些目錄隨著 DetectViz 框架成熟會趨向穩定：
@@ -406,7 +406,7 @@ plugins/custom/              # 自訂插件
 compositions/                # 新的組合定義
 ```
 
-## 🔧 核心架構決策與實作策略
+## 核心架構決策與實作策略
 
 ### **1. Lifecycle 管理策略**
 基於討論決定，生命週期管理是平台核心職責：
@@ -561,7 +561,7 @@ composition:
         enabled: false  # 可關閉以保持輕量
 ```
 
-## 🎯 核心插件最終設計
+## 核心插件最終設計
 
 基於討論，`plugins/core/` 保持精簡：
 
@@ -585,7 +585,7 @@ plugins/core/                # 核心插件(框架穩定層)
 - ❌ `core/security/` → 由 `pkg/shared/security/` + `internal/services/security/` 處理  
 - ❌ `core/system/` → 細化為 `plugins/community/` 的各種整合插件
 
-## 🔌 Plugin 設計規範
+## Plugin 設計規範
 
 ### **Plugin Interface 標準**
 ```go
@@ -658,7 +658,7 @@ type PluginMetadata struct {
 }
 ```
 
-## 🏛️ 依賴管理與設計約束
+## 依賴管理與設計約束
 
 ### **依賴方向規則**
 為避免循環依賴，嚴格遵循以下依賴方向：
@@ -740,7 +740,7 @@ func (r *DependencyResolver) ResolveDependencies(plugins []PluginConfig) ([]Plug
 }
 ```
 
-## 🎯 架構演進路徑
+## 架構演進路徑
 
 ### **階段一：核心穩定化**
 1. 完善 `internal/platform/composition/lifecycle.go`
@@ -782,7 +782,7 @@ func (r *DependencyResolver) ResolveDependencies(plugins []PluginConfig) ([]Plug
 
 ---
 
-## 📊 Alloy 可觀測性開發套件
+## Alloy 可觀測性開發套件
 
 ### **Config-Driven 監控導入**
 
@@ -1052,7 +1052,7 @@ func (op *ObservabilityPipeline) ProcessMetrics(ctx context.Context, metrics []M
 }
 ```
 
-## 🌐 Web UI 架構整合
+## Web UI 架構整合
 
 ### **HTMX + Echo 模組化設計**
 
@@ -1143,7 +1143,7 @@ func PermissionMiddleware(requiredPermission string) echo.MiddlewareFunc {
 }
 ```
 
-## 🔗 Plugin 間通訊與資料流
+## Plugin 間通訊與資料流
 
 ### **通訊機制設計**
 
@@ -1313,7 +1313,7 @@ func (r *ReliableEventBus) PublishWithRetry(topic string, data any) error {
 }
 ```
 
-## ⚡ 效能與可擴展性設計
+## 效能與可擴展性設計
 
 ### **Plugin 載入效能優化**
 
@@ -1568,7 +1568,7 @@ func (at *AutoTuner) OptimizePlugin(pluginName string) error {
 }
 ```
 
-## 🔒 安全性與權限管理
+## 安全性與權限管理
 
 ### **Plugin 安全隔離機制**
 
@@ -1829,6 +1829,3 @@ plugin_security:
       require_signature: true
       allow_self_signed: false
 ```
-
-## 🔄 架構演進路徑
-

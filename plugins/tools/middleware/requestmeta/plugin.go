@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"detectviz/pkg/platform/contracts"
+	"detectviz/pkg/shared/log"
 )
 
 // RequestMetaMiddleware implements HTTP request metadata processing middleware.
@@ -374,10 +375,14 @@ func (rm *RequestMetaMiddleware) generateRequestID() string {
 // logRequest logs request metadata.
 // zh: logRequest 記錄請求元資料。
 func (rm *RequestMetaMiddleware) logRequest(metadata *RequestMetadata) {
-	// Simple logging implementation
-	// In production, you would use a proper logger (otelzap, logrus, etc.)
-	fmt.Printf("[RequestMeta] %s %s - RequestID: %s, TraceID: %s, UserAgent: %s\n",
-		metadata.Method, metadata.Path, metadata.RequestID, metadata.TraceID, metadata.UserAgent)
+	ctx := context.Background()
+	log.L(ctx).Info("Request metadata",
+		"method", metadata.Method,
+		"path", metadata.Path,
+		"request_id", metadata.RequestID,
+		"trace_id", metadata.TraceID,
+		"user_agent", metadata.UserAgent,
+	)
 }
 
 // Utility functions

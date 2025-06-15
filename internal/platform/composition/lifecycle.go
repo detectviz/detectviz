@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"detectviz/pkg/platform/contracts"
+	"detectviz/pkg/shared/log"
 )
 
 // LifecycleManager implements the core lifecycle management functionality.
@@ -264,7 +265,8 @@ func (lm *LifecycleManager) publishEvent(eventType contracts.LifecycleEventType,
 	for _, listener := range lm.listeners {
 		if listenerErr := listener.OnLifecycleEvent(event); listenerErr != nil {
 			// Log the error but don't fail the lifecycle operation
-			fmt.Printf("Lifecycle listener error: %v\n", listenerErr)
+			ctx := context.Background()
+			log.L(ctx).Warn("Lifecycle listener error", "error", listenerErr, "component", component, "event", eventType)
 		}
 	}
 }

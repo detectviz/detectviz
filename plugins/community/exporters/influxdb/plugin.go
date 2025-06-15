@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"detectviz/pkg/platform/contracts"
+	"detectviz/pkg/shared/log"
 )
 
 // InfluxDBExporter implements InfluxDB metrics exporter.
@@ -234,19 +235,29 @@ func (e *InfluxDBExporter) Description() string {
 	return e.description
 }
 
-// Init initializes the plugin.
-// zh: Init 初始化插件。
+// Init initializes the InfluxDB exporter with the provided configuration.
+// zh: Init 使用提供的配置初始化 InfluxDB 匯出器。
 func (e *InfluxDBExporter) Init(config any) error {
-	if e.initialized {
-		return nil
+	// Parse configuration
+	if err := parseInfluxDBConfig(config, e.config); err != nil {
+		return fmt.Errorf("failed to parse InfluxDB config: %w", err)
 	}
 
-	// Test connection to validate configuration
-	if err := e.testConnection(); err != nil {
-		return fmt.Errorf("failed to validate InfluxDB connection: %w", err)
+	// Validate required configuration
+	if e.config.URL == "" {
+		return fmt.Errorf("InfluxDB URL is required")
+	}
+
+	// Set up HTTP client
+	e.httpClient = &http.Client{
+		Timeout: time.Duration(e.config.Timeout) * time.Second,
 	}
 
 	e.initialized = true
+
+	ctx := context.Background()
+	log.L(ctx).Info("InfluxDB exporter registered", "url", e.config.URL)
+
 	return nil
 }
 
@@ -268,28 +279,29 @@ func (e *InfluxDBExporter) OnRegister() error {
 	return nil
 }
 
-// OnStart is called when the plugin is started.
-// zh: OnStart 在插件啟動時被呼叫。
+// OnStart is called when the plugin lifecycle starts.
+// zh: OnStart 在插件生命週期開始時被調用。
 func (e *InfluxDBExporter) OnStart() error {
 	if !e.initialized {
 		return fmt.Errorf("plugin not initialized")
 	}
 
-	// Test connection to InfluxDB
-	if err := e.testConnection(); err != nil {
-		return fmt.Errorf("failed to connect to InfluxDB: %w", err)
-	}
-
 	e.started = true
-	fmt.Printf("InfluxDB exporter started successfully\n")
+
+	ctx := context.Background()
+	log.L(ctx).Info("InfluxDB exporter started successfully")
+
 	return nil
 }
 
-// OnStop is called when the plugin is stopped.
-// zh: OnStop 在插件停止時被呼叫。
+// OnStop is called when the plugin lifecycle stops.
+// zh: OnStop 在插件生命週期停止時被調用。
 func (e *InfluxDBExporter) OnStop() error {
 	e.started = false
-	fmt.Printf("InfluxDB exporter stopped\n")
+
+	ctx := context.Background()
+	log.L(ctx).Info("InfluxDB exporter stopped")
+
 	return nil
 }
 

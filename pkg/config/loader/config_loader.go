@@ -115,9 +115,32 @@ type EventBusConfig struct {
 // LoggingConfig contains logging configuration
 // zh: LoggingConfig 包含日誌配置
 type LoggingConfig struct {
-	Level  string `yaml:"level"`
-	Output string `yaml:"output"`
-	Format string `yaml:"format"`
+	Type       string             `yaml:"type" json:"type"`               // console, file, both
+	Level      string             `yaml:"level" json:"level"`             // debug, info, warn, error
+	Format     string             `yaml:"format" json:"format"`           // json, text
+	Output     string             `yaml:"output" json:"output"`           // stdout, stderr, file path
+	FileConfig *LoggingFileConfig `yaml:"file_config" json:"file_config"` // file rotation config
+	OTEL       *LoggingOTELConfig `yaml:"otel" json:"otel"`               // OpenTelemetry config
+}
+
+// LoggingFileConfig defines file rotation configuration for logging
+// zh: LoggingFileConfig 定義日誌檔案輪轉配置
+type LoggingFileConfig struct {
+	Filename   string `yaml:"filename" json:"filename"`       // log file path
+	MaxSize    int    `yaml:"max_size" json:"max_size"`       // max size in MB
+	MaxBackups int    `yaml:"max_backups" json:"max_backups"` // max backup files
+	MaxAge     int    `yaml:"max_age" json:"max_age"`         // max age in days
+	Compress   bool   `yaml:"compress" json:"compress"`       // compress old files
+}
+
+// LoggingOTELConfig defines OpenTelemetry configuration for logging
+// zh: LoggingOTELConfig 定義日誌的 OpenTelemetry 配置
+type LoggingOTELConfig struct {
+	Enabled        bool   `yaml:"enabled" json:"enabled"`
+	ServiceName    string `yaml:"service_name" json:"service_name"`
+	ServiceVersion string `yaml:"service_version" json:"service_version"`
+	TraceIDField   string `yaml:"trace_id_field" json:"trace_id_field"`
+	SpanIDField    string `yaml:"span_id_field" json:"span_id_field"`
 }
 
 // SecurityConfig contains security settings

@@ -3,10 +3,14 @@ package prometheus
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"reflect"
+	"strconv"
 	"time"
 
 	"detectviz/pkg/platform/contracts"
+	"detectviz/pkg/shared/log"
 )
 
 // PrometheusImporter implements Prometheus metrics importer.
@@ -18,6 +22,8 @@ type PrometheusImporter struct {
 	config      *PrometheusConfig
 	initialized bool
 	streaming   bool
+	httpClient  *http.Client
+	metrics     []PrometheusMetric
 }
 
 // PrometheusConfig defines the configuration for Prometheus importer.
@@ -30,6 +36,15 @@ type PrometheusConfig struct {
 	Username       string `yaml:"username" json:"username" mapstructure:"username"`
 	Password       string `yaml:"password" json:"password" mapstructure:"password"`
 	BearerToken    string `yaml:"bearer_token" json:"bearer_token" mapstructure:"bearer_token"`
+}
+
+// PrometheusMetric represents a single Prometheus metric.
+// zh: PrometheusMetric 代表單個 Prometheus 指標。
+type PrometheusMetric struct {
+	Name      string            `json:"name"`
+	Value     float64           `json:"value"`
+	Labels    map[string]string `json:"labels"`
+	Timestamp time.Time         `json:"timestamp"`
 }
 
 // NewPrometheusImporter creates a new Prometheus importer instance.
@@ -56,6 +71,7 @@ func NewPrometheusImporter(config any) (contracts.Plugin, error) {
 		config:      promConfig,
 		initialized: false,
 		streaming:   false,
+		httpClient:  &http.Client{},
 	}, nil
 }
 
@@ -271,21 +287,40 @@ func (p *PrometheusImporter) GetHealthMetrics() map[string]any {
 	}
 }
 
-// Import imports metrics from Prometheus.
-// zh: Import 從 Prometheus 匯入指標。
+// Import performs a data import from Prometheus.
+// zh: Import 從 Prometheus 執行資料匯入。
 func (p *PrometheusImporter) Import(ctx context.Context) error {
-	if !p.initialized {
-		return fmt.Errorf("Prometheus importer not initialized")
+	if !p.initialized || !p.streaming {
+		return fmt.Errorf("prometheus importer not initialized or started")
 	}
 
-	// TODO: Implement actual Prometheus metrics scraping
-	fmt.Printf("Importing metrics from Prometheus endpoint: %s\n", p.config.Endpoint)
+	log.L(ctx).Info("Importing metrics from Prometheus endpoint", "endpoint", p.config.Endpoint)
 
-	// Mock implementation - would normally:
-	// 1. Connect to Prometheus API
-	// 2. Query for metrics
-	// 3. Parse response
-	// 4. Send data to pipeline
+	// Build query URL
+	queryURL, err := p.buildQueryURL()
+	if err != nil {
+		return fmt.Errorf("failed to build query URL: %w", err)
+	}
+
+	// Make HTTP request
+	resp, err := p.httpClient.Get(queryURL)
+	if err != nil {
+		return fmt.Errorf("failed to query Prometheus: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("prometheus query failed with status: %d", resp.StatusCode)
+	}
+
+	// TODO: Parse Prometheus response and convert to ImportData
+	// This is a simplified implementation
+	p.metrics = append(p.metrics, PrometheusMetric{
+		Name:      "sample_metric",
+		Value:     42.0,
+		Labels:    map[string]string{"instance": "localhost:9090"},
+		Timestamp: time.Now(),
+	})
 
 	return nil
 }
@@ -379,4 +414,21 @@ func RegisterImporter(registry contracts.ImporterRegistry) error {
 	}
 
 	return registry.RegisterImporter("prometheus", factory)
+}
+
+func (p *PrometheusImporter) buildQueryURL() (string, error) {
+	baseURL, err := url.Parse(p.config.Endpoint)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse Prometheus endpoint: %w", err)
+	}
+
+	queryParams := url.Values{}
+	queryParams.Add("query", "up")
+	queryParams.Add("start", strconv.FormatInt(time.Now().Add(-time.Minute).Unix(), 10))
+	queryParams.Add("end", strconv.FormatInt(time.Now().Unix(), 10))
+	queryParams.Add("step", p.config.ScrapeInterval)
+
+	baseURL.RawQuery = queryParams.Encode()
+
+	return baseURL.String(), nil
 }

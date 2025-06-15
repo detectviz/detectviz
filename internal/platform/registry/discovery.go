@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"detectviz/pkg/platform/contracts"
+	"detectviz/pkg/shared/log"
 )
 
 // PluginDiscovery handles automatic discovery and registration of plugins.
@@ -95,8 +97,8 @@ func (pd *PluginDiscovery) DiscoverPlugins() ([]*DiscoveredPlugin, error) {
 	return allPlugins, nil
 }
 
-// scanDirectory recursively scans a directory for plugin files.
-// zh: scanDirectory 遞歸掃描目錄中的插件檔案。
+// scanDirectory scans a directory for plugin files.
+// zh: scanDirectory 掃描目錄中的插件檔案。
 func (pd *PluginDiscovery) scanDirectory(dirPath string) ([]*DiscoveredPlugin, error) {
 	var plugins []*DiscoveredPlugin
 
@@ -110,12 +112,13 @@ func (pd *PluginDiscovery) scanDirectory(dirPath string) ([]*DiscoveredPlugin, e
 			return nil
 		}
 
-		// Look for plugin.go files
+		// Look for Go plugin files
 		if strings.HasSuffix(path, "plugin.go") {
 			plugin, err := pd.analyzePluginFile(path)
 			if err != nil {
 				// Log error but continue scanning
-				fmt.Printf("Error analyzing plugin file %s: %v\n", path, err)
+				ctx := context.Background()
+				log.L(ctx).Error("Error analyzing plugin file", "path", path, "error", err)
 				return nil
 			}
 
@@ -128,7 +131,8 @@ func (pd *PluginDiscovery) scanDirectory(dirPath string) ([]*DiscoveredPlugin, e
 		if strings.HasSuffix(path, ".so") {
 			plugin, err := pd.analyzeSharedLibrary(path)
 			if err != nil {
-				fmt.Printf("Error analyzing shared library %s: %v\n", path, err)
+				ctx := context.Background()
+				log.L(ctx).Error("Error analyzing shared library", "path", path, "error", err)
 				return nil
 			}
 
@@ -328,13 +332,12 @@ func (pd *PluginDiscovery) extractNameFromPath(filePath string) string {
 // RegisterDiscoveredPlugins registers all discovered plugins.
 // zh: RegisterDiscoveredPlugins 註冊所有已發現的插件。
 func (pd *PluginDiscovery) RegisterDiscoveredPlugins() error {
+	ctx := context.Background()
 	for _, discoveredPlugin := range pd.discovered {
 		if err := pd.registerPlugin(discoveredPlugin); err != nil {
+			log.L(ctx).Error("Failed to register plugin", "plugin", discoveredPlugin.Name, "error", err)
 			discoveredPlugin.Error = err.Error()
-			fmt.Printf("Failed to register plugin %s: %v\n", discoveredPlugin.Name, err)
-			continue
 		}
-		discoveredPlugin.Loaded = true
 	}
 	return nil
 }
@@ -381,17 +384,16 @@ func (pd *PluginDiscovery) registerSharedLibraryPlugin(discoveredPlugin *Discove
 	return registerFunc(pd.registry)
 }
 
-// registerSourcePlugin registers a plugin compiled into the binary.
-// zh: registerSourcePlugin 註冊編譯到二進位檔案中的插件。
+// registerSourcePlugin registers a source plugin (for development/debugging).
+// zh: registerSourcePlugin 註冊原始碼插件（用於開發/除錯）。
 func (pd *PluginDiscovery) registerSourcePlugin(discoveredPlugin *DiscoveredPlugin) error {
-	// This is a placeholder for source-based plugin registration
-	// In a real implementation, you would use build tags or code generation
-	// to conditionally compile and register plugins
+	ctx := context.Background()
+	log.L(ctx).Info("Source plugin found but not automatically registered (requires manual registration)", "plugin", discoveredPlugin.Name)
 
-	fmt.Printf("Source plugin %s found but not automatically registered (requires manual registration)\n",
-		discoveredPlugin.Name)
-
-	return nil
+	// Source plugins are not automatically registered in production
+	// They require manual registration or compilation to .so files
+	discoveredPlugin.Error = "source plugin requires manual registration"
+	return fmt.Errorf("source plugin %s requires manual registration", discoveredPlugin.Name)
 }
 
 // GetDiscoveredPlugins returns all discovered plugins.
