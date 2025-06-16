@@ -1,0 +1,37 @@
+name: dev-platform
+title: DetectViz 開發預設平台
+version: 1.0.0
+description: >
+  DetectViz 預設 scaffold 組合平台，適用於本地開發、plugin 驗證與平台整合測試。
+
+  這個組合包含了基本的認證、記錄和健康檢查功能，為開發者提供一個最小但完整的
+  DetectViz 平台環境。適合用於學習框架架構、開發新功能或測試插件集成。
+
+tags: [dev, scaffold, jwt, logger, grafana]
+icon: dev-platform.svg
+
+features:
+  - JWT 認證系統
+  - OtelZap 結構化日誌
+  - 內存式快取和事件匯流排
+  - 自動插件註冊與健康檢查
+  - 開發友好的配置預設值
+
+requirements:
+  - Go 1.21+
+  - 至少 256MB 記憶體
+  - 網路連接 (用於外部服務整合)
+
+usage:
+  development: true
+  production: false
+  testing: true
+
+maintainers:
+  - DetectViz Core Team
+
+documentation:
+  - README.md
+  - docs/develop-guide.md
+
+last_updated: 2024-12-27

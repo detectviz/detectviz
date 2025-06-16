@@ -3,9 +3,17 @@
 
 # Server configuration
 # zh: 伺服器配置
-server:
-  log_level: info
-  http_listen_port: 12345
+server {
+  log_level = "info"
+  http_listen_address = "0.0.0.0"
+  http_listen_port = 12345
+}
+
+# Optional: tracing support for Alloy itself
+# zh: Alloy 自身追蹤支援（導出至 Tempo）
+tracing {
+  endpoint = "tempo:3200"
+}
 
 # OpenTelemetry receiver configuration
 # zh: OpenTelemetry 接收器配置
@@ -97,7 +105,7 @@ loki.source.file "detectviz_logs" {
     {__path__ = "/var/log/detectviz/*.log", "job" = "detectviz"},
     {__path__ = "/var/log/alloy/*.log", "job" = "alloy"},
   ]
-  
+  format = "json"
   forward_to = [loki.write.default.receiver]
 }
 
@@ -108,42 +116,3 @@ loki.write "default" {
     url = "http://loki:3100/loki/api/v1/push"
   }
 }
-
-# Service discovery for dynamic targets
-# zh: 動態目標的服務發現
-discovery.kubernetes "detectviz_pods" {
-  role = "pod"
-  
-  namespaces {
-    names = ["detectviz", "monitoring"]
-  }
-}
-
-# Relabeling for Kubernetes pods
-# zh: Kubernetes Pod 重新標記
-prometheus.scrape "kubernetes_pods" {
-  targets         = discovery.kubernetes.detectviz_pods.targets
-  forward_to      = [prometheus.remote_write.mimir.receiver]
-  scrape_interval = "30s"
-  
-  relabel_configs = [
-    {
-      source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
-      action        = "keep"
-      regex         = "true"
-    },
-    {
-      source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_path"]
-      action        = "replace"
-      target_label  = "__metrics_path__"
-      regex         = "(.+)"
-    },
-    {
-      source_labels = ["__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
-      action        = "replace"
-      regex         = "([^:]+)(?::\\d+)?;(\\d+)"
-      replacement   = "$1:$2"
-      target_label  = "__address__"
-    },
-  ]
-} 

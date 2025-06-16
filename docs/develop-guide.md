@@ -62,7 +62,7 @@ Detectviz 採用 Plugin 為核心的可擴充架構，設計重點如下：
 - 日誌整合：otelzap（Zap logger with OTEL context，可結合 lumberjack 實作 log rotation）
   - 支援 log level、json/text 格式、trace context、log sink 組合
   - 建議全系統統一使用 otelzap 作為唯一 logger
-  - 若需 log rotate，建議結合 lumberjack 套件（如 app.log 輪替、壓縮、保留）
+  - 結合 lumberjack 套件支援 log rotate（如 app.log 輪替、壓縮、保留）
 - OTEL 資源註解：`go.opentelemetry.io/otel/sdk/resource`（提供 org, host, platform tag）
 - Observability：OTEL SDK（trace, log, metric），整合 Prometheus、Tempo、Loki、Alloy DevKit
 - OTEL 導入元件：
@@ -739,36 +739,59 @@ func (p *PrometheusExporter) Export(data any) error {
 - `supportbundles/`、`middleware/inject-debug-id/`
 
 ### 組合定義：`compositions/`（平台組合方案）
-- `minimal-platform/`：框架機制測試用組合
-- `monitoring-stack/`：監控堆疊組合
-- `observability-platform/`：完整可觀測性平台組合
-- `alloy-devkit/`：Alloy 可觀測性開發套件
+- `dev-platform/`：DetectViz 預設開發平台組合，適用於本地開發、plugin 驗證與平台整合測試
+  - 包含 JWT 認證、OtelZap 日誌、記憶體式基礎設施、自動插件註冊與健康檢查
+  - 配置文件：`composition.yaml`、`meta.yaml`、`README.md`
 
----
+#### dev-platform 作為 Scaffold 預設組合平台
 
-## Logger
+`dev-platform` 是 DetectViz 的核心開發組合，作為 scaffold 的預設平台配置：
 
-- [ ] 導入全域 Logger 管理模組
-  - 路徑建議：`pkg/shared/log/logger.go`
-  - 功能：
-    - 採用 `otelzap` 為唯一 logger，統一平台日誌行為
-    - 搭配 lumberjack 支援 log rotation（大小、備份、壓縮）
-    - 可透過 `log.L(ctx)` 取得帶有 trace context 的 logger 實例
-    - 提供 `log.SetGlobalLogger()` 於 scaffold 啟動時設置預設 logger
+**設計目標：**
+- 提供最小但完整的 DetectViz 平台環境
+- 支援插件開發和測試的完整生命週期
+- 作為學習 DetectViz 架構的入門範例
+- 提供開發友好的預設配置
 
-- [ ] 擴充 LoggingConfig 結構
-  - 路徑建議：`pkg/config/schema/types.go`
-  - 說明：
-    - 新增 `Type`, `OTEL`, `FileConfig` 等欄位
-    - 支援 log 輸出選項（stdout/file）、格式（json/text）
+**核心組件：**
+```yaml
+# compositions/dev-platform/composition.yaml
+core_plugins:
+  - name: core-auth-jwt      # JWT 認證插件
+    type: auth
+    enabled: true
+    config:
+      secret: dev-secret
+      issuer: "detectviz-dev"
+      expiry_time: "24h"
 
-- [ ] 升級 plugin 與 scaffold 中所有 `fmt.Printf` 為 `log.L(ctx).Info/Debug(...)`
-  - 範圍包含：
-    - lifecycle.go
-    - prometheus, jwt, influxdb 等 plugin
-    - scaffold_test 與 webui_test 中的 log 輸出
+  - name: otelzap-logger     # OtelZap 日誌插件
+    type: logger
+    enabled: true
+    config:
+      level: info
+      format: json
+      output: stdout
 
-- [ ] 撰寫日誌初始化與整合測試
-  - 確認 logger 能從 `LoggingConfig` 正確初始化
-  - 驗證 trace ID 是否成功注入至 log 訊息中
-  - 測試檔案位置建議：`internal/test/integration/logging_test.go`
+health:
+  enabled: true
+  interval: "30s"
+  timeout: "5s"
+  plugins:
+    include: all             # 包含所有插件的健康檢查
+```
+
+**使用場景：**
+1. **本地開發**：快速啟動完整的 DetectViz 環境
+2. **插件開發**：提供插件註冊、健康檢查、日誌整合的完整環境
+3. **架構學習**：展示組合式架構的實際應用
+4. **整合測試**：驗證平台功能和插件互動
+
+**啟動方式：**
+```bash
+# 使用預設組合啟動
+go run apps/server/main.go --composition=dev-platform
+
+# 或直接啟動（dev-platform 為預設）
+go run apps/server/main.go
+```

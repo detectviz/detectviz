@@ -162,13 +162,13 @@ plugins/
 │   ├── auth/
 │   └── middleware/
 ├── community/               # 社群插件（依 composition 載入）
-│   ├── web/
-│   │   ├── pages/          # 頁面插件
-│   │   ├── components/     # 組件插件
-│   │   ├── themes/         # 主題插件
-│   │   └── widgets/        # 小工具插件
 │   └── integrations/
-└── tools/                   # 工具插件（開發時載入）
+├── web/
+│   ├── pages/          # 頁面插件
+│   ├── components/     # 組件插件
+│   ├── themes/         # 主題插件
+│   └── widgets/        # 小工具插件
+└── tools/              # 工具插件（開發時載入）
 ```
 
 ### 2. WebUI 註冊階段

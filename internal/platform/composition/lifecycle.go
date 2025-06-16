@@ -8,6 +8,8 @@ import (
 
 	"detectviz/pkg/platform/contracts"
 	"detectviz/pkg/shared/log"
+	"detectviz/plugins/core/logging/otelzap"
+	// Import core logging plugin for auto-registration
 )
 
 // LifecycleManager implements the core lifecycle management functionality.
@@ -271,6 +273,59 @@ func (lm *LifecycleManager) publishEvent(eventType contracts.LifecycleEventType,
 	}
 }
 
+// RegisterLoggerPlugin registers and initializes the logging plugin if available
+// zh: RegisterLoggerPlugin 註冊並初始化日誌插件（如果可用）
+func (lm *LifecycleManager) RegisterLoggerPlugin(ctx context.Context, registry contracts.Registry) error {
+	// Use the global registry from otelzap package for plugin access
+	globalRegistry := otelzap.GetGlobalRegistry()
+
+	// Check if otelzap logging plugin is available
+	pluginNames := globalRegistry.ListPlugins()
+	for _, name := range pluginNames {
+		if name == "otelzap" {
+			plugin, err := globalRegistry.GetPlugin(name)
+			if err != nil {
+				log.L(ctx).Warn("Failed to get otelzap plugin", "error", err)
+				return nil // Don't fail the entire startup if logger plugin fails
+			}
+
+			// Check if plugin implements LoggerProvider interface
+			if loggerProvider, ok := plugin.(contracts.LoggerProvider); ok {
+				// Initialize the logger plugin first
+				if lifecyclePlugin, ok := plugin.(contracts.LifecycleAware); ok {
+					if err := lifecyclePlugin.OnRegister(); err != nil {
+						log.L(ctx).Warn("Failed to register otelzap plugin", "error", err)
+						return nil
+					}
+				}
+
+				// Set as global logger
+				globalLogger := loggerProvider.Logger()
+				log.SetGlobalLogger(globalLogger)
+
+				log.L(ctx).Info("Successfully registered otelzap logging plugin as global logger")
+
+				// Register as component in our local registry too if needed
+				if err := registry.RegisterPlugin(name, otelzap.NewOtelZapPlugin); err != nil {
+					log.L(ctx).Warn("Failed to register otelzap plugin in local registry", "error", err)
+				}
+
+				// Register as component
+				comp := contracts.ComponentInfo{
+					Name:   name,
+					Type:   "logger-plugin",
+					Status: contracts.StatusInitialized,
+				}
+				lm.components[name] = comp
+				lm.publishEvent(contracts.EventInitialize, name, contracts.StatusInitialized, nil)
+			}
+			break
+		}
+	}
+
+	return nil
+}
+
 // StartAll starts all registered plugins with lifecycle management
 // zh: StartAll 啟動所有已註冊的插件並進行生命週期管理
 func (lm *LifecycleManager) StartAll(ctx context.Context, registry contracts.Registry) error {
@@ -283,6 +338,12 @@ func (lm *LifecycleManager) StartAll(ctx context.Context, registry contracts.Reg
 
 	lm.status = contracts.StatusStarting
 	lm.publishEvent(contracts.EventStart, "lifecycle-manager", lm.status, nil)
+
+	// First, register logger plugin if available
+	if err := lm.RegisterLoggerPlugin(ctx, registry); err != nil {
+		log.L(ctx).Warn("Failed to register logger plugin", "error", err)
+		// Continue with other plugins even if logger plugin fails
+	}
 
 	// Get all plugins from registry
 	pluginNames := registry.ListPlugins()

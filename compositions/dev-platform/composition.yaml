@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Composition
 metadata:
-  name: minimal-platform
-  description: Minimal DetectViz platform for testing framework mechanisms
+  name: dev-platform
+  description: DetectViz 預設開發平台組合
   version: 1.0.0
 
 spec:
@@ -20,20 +20,21 @@ spec:
 
   # Core plugins (always loaded)
   core_plugins:
-    - name: jwt-authenticator
+    - name: core-auth-jwt
       type: auth
       enabled: true
       config:
-        secret_key: "minimal-platform-secret"
-        issuer: "detectviz-minimal"
+        secret: dev-secret
+        issuer: "detectviz-dev"
         expiry_time: "24h"
 
-    - name: logging-middleware
-      type: middleware
+    - name: otelzap-logger
+      type: logger
       enabled: true
       config:
         level: info
         format: json
+        output: stdout
 
   # Community plugins (optional)
   community_plugins:
@@ -80,7 +81,7 @@ spec:
   # Security configuration
   security:
     authentication:
-      provider: jwt-authenticator
+      provider: core-auth-jwt
       required: true
 
     authorization:
@@ -103,8 +104,10 @@ spec:
     validation: true
     auto_resolve: true
 
-  # Health check configuration
+  # Health check configuration - 支援 plugins.include: all
   health:
     enabled: true
     interval: "30s"
     timeout: "5s"
+    plugins:
+      include: all # 或指定 plugin 名稱陣列

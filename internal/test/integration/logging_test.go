@@ -8,7 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"detectviz/internal/platform/composition"
+	"detectviz/pkg/platform/contracts"
 	"detectviz/pkg/shared/log"
+	"detectviz/plugins/core/logging/otelzap"
 )
 
 // TestLoggerInitialization tests logger initialization with various configurations.
@@ -448,4 +451,239 @@ func TestLoggerCleanup(t *testing.T) {
 
 		t.Log("Sync and close test passed")
 	})
+}
+
+// TestOtelZapPluginIntegration tests the OtelZap plugin initialization and integration.
+// zh: TestOtelZapPluginIntegration 測試 OtelZap 插件初始化和整合。
+func TestOtelZapPluginIntegration(t *testing.T) {
+	// Import required packages at the top level
+	// This test requires manual import due to testing context
+
+	t.Run("PluginRegistration", func(t *testing.T) {
+		// Get the global registry from otelzap
+		registry := otelzap.GetGlobalRegistry()
+		if registry == nil {
+			t.Fatal("Global registry should not be nil")
+		}
+
+		// Check if otelzap plugin is registered
+		pluginNames := registry.ListPlugins()
+		found := false
+		for _, name := range pluginNames {
+			if name == "otelzap" {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			t.Fatal("otelzap plugin should be registered automatically")
+		}
+
+		t.Log("OtelZap plugin registration test passed")
+	})
+
+	t.Run("PluginInitialization", func(t *testing.T) {
+		registry := otelzap.GetGlobalRegistry()
+
+		// Get the plugin instance
+		plugin, err := registry.GetPlugin("otelzap")
+		if err != nil {
+			t.Fatalf("Failed to get otelzap plugin: %v", err)
+		}
+
+		// Check if plugin implements required interfaces
+		if _, ok := plugin.(contracts.LoggerProvider); !ok {
+			t.Fatal("Plugin should implement LoggerProvider interface")
+		}
+
+		if _, ok := plugin.(contracts.LifecycleAware); !ok {
+			t.Fatal("Plugin should implement LifecycleAware interface")
+		}
+
+		if _, ok := plugin.(contracts.HealthChecker); !ok {
+			t.Fatal("Plugin should implement HealthChecker interface")
+		}
+
+		t.Log("OtelZap plugin initialization test passed")
+	})
+
+	t.Run("LifecycleManagement", func(t *testing.T) {
+		registry := otelzap.GetGlobalRegistry()
+
+		// Create lifecycle manager
+		resolver := &testDependencyResolver{}
+		manager := composition.NewLifecycleManager(resolver)
+
+		ctx := context.Background()
+
+		// Test RegisterLoggerPlugin
+		err := manager.RegisterLoggerPlugin(ctx, registry)
+		if err != nil {
+			t.Fatalf("Failed to register logger plugin: %v", err)
+		}
+
+		// Check if plugin was registered as component
+		components := manager.ListComponents()
+		found := false
+		for _, comp := range components {
+			if comp.Name == "otelzap" && comp.Type == "logger-plugin" {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			t.Fatal("Logger plugin should be registered as component")
+		}
+
+		t.Log("Logger plugin lifecycle management test passed")
+	})
+
+	t.Run("HealthCheck", func(t *testing.T) {
+		registry := otelzap.GetGlobalRegistry()
+
+		plugin, err := registry.GetPlugin("otelzap")
+		if err != nil {
+			t.Fatalf("Failed to get otelzap plugin: %v", err)
+		}
+
+		healthChecker, ok := plugin.(contracts.HealthChecker)
+		if !ok {
+			t.Fatal("Plugin should implement HealthChecker")
+		}
+
+		ctx := context.Background()
+		status := healthChecker.CheckHealth(ctx)
+
+		if status.Status != "healthy" && status.Status != "degraded" {
+			t.Errorf("Expected health status to be healthy or degraded, got: %s", status.Status)
+		}
+
+		if status.Timestamp.IsZero() {
+			t.Error("Health check timestamp should not be zero")
+		}
+
+		t.Logf("Health check status: %s, message: %s", status.Status, status.Message)
+		t.Log("Health check test passed")
+	})
+}
+
+// TestOtelZapTraceContextIntegration tests trace context injection in logs.
+// zh: TestOtelZapTraceContextIntegration 測試日誌中的追蹤上下文注入。
+func TestOtelZapTraceContextIntegration(t *testing.T) {
+	t.Run("TraceContextInjection", func(t *testing.T) {
+		// This test requires OpenTelemetry setup
+		// For now, we'll test the basic functionality
+
+		registry := otelzap.GetGlobalRegistry()
+
+		plugin, err := registry.GetPlugin("otelzap")
+		if err != nil {
+			t.Fatalf("Failed to get otelzap plugin: %v", err)
+		}
+
+		loggerProvider, ok := plugin.(contracts.LoggerProvider)
+		if !ok {
+			t.Fatal("Plugin should implement LoggerProvider")
+		}
+
+		// Create a context (without actual tracing for now)
+		ctx := context.Background()
+
+		// Get context-aware logger
+		logger := loggerProvider.WithContext(ctx)
+		if logger == nil {
+			t.Fatal("Context logger should not be nil")
+		}
+
+		// Test logging with context
+		logger.Info("Test message with context")
+		logger.Warn("Warning message with context")
+		logger.Error("Error message with context")
+
+		t.Log("Trace context injection test passed")
+	})
+
+	t.Run("ConfigurationValidation", func(t *testing.T) {
+		registry := otelzap.GetGlobalRegistry()
+
+		plugin, err := registry.GetPlugin("otelzap")
+		if err != nil {
+			t.Fatalf("Failed to get otelzap plugin: %v", err)
+		}
+
+		// Test if plugin has valid configuration
+		if otelzapPlugin, ok := plugin.(*otelzap.OtelZapPlugin); ok {
+			config := otelzapPlugin.GetConfig()
+			if config == nil {
+				t.Fatal("Plugin config should not be nil")
+			}
+
+			// Check basic configuration
+			if config.Level == "" {
+				t.Error("Log level should not be empty")
+			}
+
+			if config.Format == "" {
+				t.Error("Log format should not be empty")
+			}
+
+			if config.ServiceName == "" {
+				t.Error("Service name should not be empty")
+			}
+
+			t.Logf("Plugin config - Level: %s, Format: %s, ServiceName: %s",
+				config.Level, config.Format, config.ServiceName)
+		}
+
+		t.Log("Configuration validation test passed")
+	})
+}
+
+// testDependencyResolver is a simple test implementation of DependencyResolver.
+// zh: testDependencyResolver 是 DependencyResolver 的簡單測試實作。
+type testDependencyResolver struct{}
+
+func (r *testDependencyResolver) ResolveDependencies(components []contracts.ComponentInfo) ([]contracts.ComponentInfo, error) {
+	// Simple implementation that returns components as-is
+	return components, nil
+}
+
+func (r *testDependencyResolver) ValidateDependencies(components []contracts.ComponentInfo) error {
+	// Simple validation - always pass
+	return nil
+}
+
+func (r *testDependencyResolver) GetDependencyGraph() contracts.DependencyGraph {
+	// Return a simple mock dependency graph
+	return &testDependencyGraph{}
+}
+
+// testDependencyGraph is a simple test implementation of DependencyGraph.
+// zh: testDependencyGraph 是 DependencyGraph 的簡單測試實作。
+type testDependencyGraph struct{}
+
+func (g *testDependencyGraph) AddNode(name string, info contracts.ComponentInfo) error {
+	return nil
+}
+
+func (g *testDependencyGraph) AddEdge(from, to string) error {
+	return nil
+}
+
+func (g *testDependencyGraph) GetTopologicalOrder() ([]string, error) {
+	return []string{}, nil
+}
+
+func (g *testDependencyGraph) HasCycle() bool {
+	return false
+}
+
+func (g *testDependencyGraph) GetDependents(name string) []string {
+	return []string{}
+}
+
+func (g *testDependencyGraph) GetDependencies(name string) []string {
+	return []string{}
 }

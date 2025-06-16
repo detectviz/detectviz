@@ -1,0 +1,43 @@
+# Add directo# 第三方與編譯產物
+vendor/
+node_modules/
+dist/
+out/
+*.log
+*.tmp
+*.bin
+
+# IDE / 環境設定
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# 測試產物 / coverage
+coverage/
+*.test
+*.prof
+*.coverprofile
+
+# 二進位與壓縮檔
+*.exe
+*.zip
+*.tar.gz
+*.7z
+
+# Go 常見編譯產物
+*.a
+*.o
+*.so
+*.exe
+
+# Generated assets
+gen/
+tmp/
+assets/
+public/
+
+# 不希望 AI index 的資料
+mock/
+testdata/
+samples/

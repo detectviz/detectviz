@@ -62,16 +62,29 @@ func ParseLogLevel(level string) LogLevel {
 }
 
 // GlobalLogger holds the global logger instance
-var globalLogger *Logger
+var globalLogger LoggerInterface
 var loggerMutex sync.RWMutex
 
-// Logger represents a logger instance
-// zh: Logger 代表日誌記錄器實例
+// LoggerInterface defines the interface for logger implementations
+// zh: LoggerInterface 定義日誌記錄器實作的介面
+type LoggerInterface interface {
+	Debug(msg string, fields ...interface{})
+	Info(msg string, fields ...interface{})
+	Warn(msg string, fields ...interface{})
+	Error(msg string, fields ...interface{})
+	Fatal(msg string, fields ...interface{})
+}
+
+// Logger represents a logger instance (legacy implementation)
+// zh: Logger 代表日誌記錄器實例（遺留實作）
 type Logger struct {
 	level  LogLevel
 	output io.Writer
 	mu     sync.Mutex
 }
+
+// Ensure Logger implements LoggerInterface
+var _ LoggerInterface = (*Logger)(nil)
 
 // LoggerConfig defines the configuration for the logger
 // zh: LoggerConfig 定義日誌記錄器的配置
@@ -212,15 +225,21 @@ func getFileWriter(config *FileConfig) (io.Writer, error) {
 
 // SetGlobalLogger sets the global logger instance
 // zh: SetGlobalLogger 設置全域日誌記錄器實例
-func SetGlobalLogger(logger *Logger) {
+func SetGlobalLogger(logger LoggerInterface) {
 	loggerMutex.Lock()
 	defer loggerMutex.Unlock()
 	globalLogger = logger
 }
 
+// SetGlobalLoggerLegacy sets the global logger instance (legacy API)
+// zh: SetGlobalLoggerLegacy 設置全域日誌記錄器實例（遺留 API）
+func SetGlobalLoggerLegacy(logger *Logger) {
+	SetGlobalLogger(logger)
+}
+
 // GetGlobalLogger returns the global logger instance
 // zh: GetGlobalLogger 回傳全域日誌記錄器實例
-func GetGlobalLogger() *Logger {
+func GetGlobalLogger() LoggerInterface {
 	loggerMutex.RLock()
 	if globalLogger != nil {
 		defer loggerMutex.RUnlock()
@@ -249,12 +268,32 @@ func GetGlobalLogger() *Logger {
 	return globalLogger
 }
 
+// GetGlobalLoggerLegacy returns the global logger instance as *Logger (for backward compatibility)
+// zh: GetGlobalLoggerLegacy 回傳全域日誌記錄器實例為 *Logger（向後相容）
+func GetGlobalLoggerLegacy() *Logger {
+	logger := GetGlobalLogger()
+	if legacyLogger, ok := logger.(*Logger); ok {
+		return legacyLogger
+	}
+	// If it's not a legacy logger, create a fallback
+	return &Logger{
+		level:  InfoLevel,
+		output: os.Stdout,
+	}
+}
+
 // L returns a logger (for future context support)
 // zh: L 回傳日誌記錄器（為未來的 context 支援做準備）
-func L(ctx context.Context) *Logger {
+func L(ctx context.Context) LoggerInterface {
 	// For now, ignore context and return global logger
 	// In the future, this can extract trace information from context
 	return GetGlobalLogger()
+}
+
+// LLegacy returns a logger as *Logger (for backward compatibility)
+// zh: LLegacy 回傳 *Logger 類型的日誌記錄器（向後相容）
+func LLegacy(ctx context.Context) *Logger {
+	return GetGlobalLoggerLegacy()
 }
 
 // log writes a log message with the given level
