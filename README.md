@@ -6,7 +6,7 @@
 
 [![Portfolio](https://img.shields.io/badge/Portfolio-sreai.tech-CFBDFE?style=for-the-badge&logo=google-chrome&logoColor=white)](https://sreai.tech)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-bigdata--zoelin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/bigdata-zoelin)
-[![Email](https://img.shields.io/badge/Email-zoe.lin%40sreai.tech-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:zoe.lin@sreai.tech)
+[![Email](https://img.shields.io/badge/Email-zoe.lin%40sreai.tech-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:tyzx5246@gmail.com)
 
 </div>
 
