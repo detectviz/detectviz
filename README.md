@@ -2,11 +2,11 @@
 
 <div align="center">
 
-[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=28&pause=1000&color=CFBDFE&center=true&vCenter=true&width=600&lines=Hi%2C+I'm+Zoe+Lin;SRE+%7C+Data+Engineer;Observability+%26+Monitoring+Expert)](https://detectviz.com)
+[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=28&pause=1000&color=CFBDFE&center=true&vCenter=true&width=600&lines=Hi%2C+I'm+Zoe+Lin;SRE+%7C+Data+Engineer;Observability+%26+Monitoring+Expert)](https://sreai.tech)
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-detectviz.com-CFBDFE?style=for-the-badge&logo=google-chrome&logoColor=white)](https://detectviz.com)
+[![Portfolio](https://img.shields.io/badge/Portfolio-sreai.tech-CFBDFE?style=for-the-badge&logo=google-chrome&logoColor=white)](https://sreai.tech)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-bigdata--zoelin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/bigdata-zoelin)
-[![Email](https://img.shields.io/badge/Email-zoe.lin%40detectviz.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:zoe.lin@detectviz.com)
+[![Email](https://img.shields.io/badge/Email-zoe.lin%40sreai.tech-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:zoe.lin@sreai.tech)
 
 </div>
 
@@ -67,6 +67,6 @@ background: Visual Design + Tech
 
 ![Profile Views](https://komarev.com/ghpvc/?username=detectviz&color=CFBDFE&style=flat-square)
 
-**[detectviz.com](https://detectviz.com)**
+**[sreai.tech](https://sreai.tech)**
 
 </div>
